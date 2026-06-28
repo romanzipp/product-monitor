@@ -62,19 +62,11 @@ func main() {
 		sources = append(sources,
 			source.NewObi(httpClient, cfg.ObiProductID, cfg.HomePLZ))
 	}
-	// Both retailers emit a JSON-LD Offer with a schema.org availability URL.
-	// That structured signal is matched instead of visible text, which is
-	// unreliable on these pages (recommended/accessory products inject stray
-	// "ausverkauft"/"nicht verfügbar" strings even when the main item is buyable).
-	inStock := []string{"schema.org/instock", "schema.org/limitedavailability", "schema.org/preorder"}
-	outOfStock := []string{"schema.org/outofstock", "schema.org/soldout", "schema.org/discontinued"}
 	if cfg.MediaMarktEnabled {
-		sources = append(sources, source.NewWebCheck("mediamarkt", httpClient, flareSolverr,
-			cfg.MediaMarktURL, "MediaMarkt", "Midea PortaSplit", model.ChannelOnline, inStock, outOfStock))
+		sources = append(sources, source.NewMediaMarkt(httpClient, flareSolverr, cfg.MediaMarktURL))
 	}
 	if cfg.EuronicsEnabled {
-		sources = append(sources, source.NewWebCheck("euronics", httpClient, flareSolverr,
-			cfg.EuronicsURL, "Euronics", "Midea PortaSplit", model.ChannelOnline, inStock, outOfStock))
+		sources = append(sources, source.NewEuronics(httpClient, flareSolverr, cfg.EuronicsURL))
 	}
 
 	if len(sources) == 0 {

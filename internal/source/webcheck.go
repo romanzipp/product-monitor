@@ -2,76 +2,84 @@ package source
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"portasplit-monitor/internal/model"
 )
 
-// WebCheckSource monitors a single product page that exposes no usable JSON
-// availability API (e.g. MediaMarkt, Euronics). It fetches the page HTML
-// (through FlareSolverr when configured, to clear anti-bot challenges) and
-// decides stock by looking for marker strings:
-//
-//   - if any outOfStock marker is present, the item is treated as unavailable;
-//   - otherwise, if any inStock marker is present, it is treated as available.
-//
-// Markers are matched case-insensitively. This is inherently more brittle than
-// a structured feed and may need tuning if a retailer changes its markup.
-type WebCheckSource struct {
-	name       string
-	client     *http.Client
-	fs         *FlareSolverr
-	url        string
-	storeName  string
-	product    string
-	channel    model.Channel
-	inStock    []string
-	outOfStock []string
-}
+// schemaInStock and schemaOutOfStock are JSON-LD schema.org availability tokens.
+// Matching the structured Offer availability is far more reliable than visible
+// page text, which on these retailers is polluted with recommended-product
+// blurbs that carry their own "in stock"/"sold out" wording.
+var schemaInStock = []string{"schema.org/instock", "schema.org/limitedavailability", "schema.org/preorder"}
+var schemaOutOfStock = []string{"schema.org/outofstock", "schema.org/soldout", "schema.org/discontinued"}
 
-// NewWebCheck builds a page-scraping source. name is the logical source id,
-// storeName the display name, and inStock/outOfStock the marker strings used to
-// decide availability.
-func NewWebCheck(name string, client *http.Client, fs *FlareSolverr, url, storeName, product string,
-	channel model.Channel, inStock, outOfStock []string) *WebCheckSource {
-	return &WebCheckSource{
-		name:       name,
-		client:     client,
-		fs:         fs,
-		url:        url,
-		storeName:  storeName,
-		product:    product,
-		channel:    channel,
-		inStock:    inStock,
-		outOfStock: outOfStock,
+var digitRunRe = regexp.MustCompile(`[0-9]{6,}`)
+
+// productToken returns the longest run of digits in a product URL (its article
+// id or EAN). It is used to confirm a fetched page really is that product's
+// page before trusting availability markers.
+func productToken(url string) string {
+	longest := ""
+	for _, m := range digitRunRe.FindAllString(url, -1) {
+		if len(m) > len(longest) {
+			longest = m
+		}
 	}
+	return longest
 }
 
-func (s *WebCheckSource) Name() string { return s.name }
+// webCheck is the shared engine for retailers that expose no usable availability
+// API (MediaMarkt, Euronics). It fetches the product page (through FlareSolverr
+// when configured, to clear anti-bot challenges) and decides stock from the
+// schema.org availability markers in the page's embedded JSON-LD.
+//
+// Per-vendor sources embed this and supply their own identity and URL.
+type webCheck struct {
+	name         string
+	client       *http.Client
+	fs           *FlareSolverr
+	url          string
+	storeName    string
+	product      string
+	channel      model.Channel
+	requireToken string // product id/EAN that must appear on the page
+	inStock      []string
+	outOfStock   []string
+}
 
-func (s *WebCheckSource) Check(ctx context.Context) ([]model.Availability, error) {
-	body, err := getBody(ctx, s.client, s.fs, s.url, map[string]string{
-		"User-Agent":      browserUserAgent,
-		"Accept":          "text/html,application/xhtml+xml",
-		"Accept-Language": "de-DE,de;q=0.9",
-	})
+func (s *webCheck) Name() string {
+	return s.name
+}
+
+func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
+	headers := map[string]string{"User-Agent": browserUserAgent, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "de-DE,de;q=0.9"}
+	body, err := getBody(ctx, s.client, s.fs, s.url, headers)
 	if err != nil {
 		return nil, err
 	}
 
 	html := strings.ToLower(string(body))
 
-	for _, m := range s.outOfStock {
-		if strings.Contains(html, strings.ToLower(m)) {
+	// Guard against redirects and soft-404 pages. When the product is delisted
+	// these retailers serve a 200 "not found" page full of OTHER in-stock items
+	// (each carrying schema.org/InStock), which would otherwise be a false
+	// positive. If the product's own id/EAN is absent, treat it as unavailable.
+	if s.requireToken != "" && !strings.Contains(html, strings.ToLower(s.requireToken)) {
+		return []model.Availability{}, nil
+	}
+
+	for _, marker := range s.outOfStock {
+		if strings.Contains(html, strings.ToLower(marker)) {
 			return []model.Availability{}, nil
 		}
 	}
 
 	available := false
-	for _, m := range s.inStock {
-		if strings.Contains(html, strings.ToLower(m)) {
+	for _, marker := range s.inStock {
+		if strings.Contains(html, strings.ToLower(marker)) {
 			available = true
 			break
 		}
@@ -80,18 +88,20 @@ func (s *WebCheckSource) Check(ctx context.Context) ([]model.Availability, error
 		return []model.Availability{}, nil
 	}
 
-	loc := "Online"
+	location := "Online"
 	if s.channel == model.ChannelInStore {
-		loc = s.storeName
+		location = s.storeName
 	}
-	return []model.Availability{{
+
+	a := model.Availability{
 		Source:      s.name,
 		StoreName:   s.storeName,
 		ProductName: s.product,
 		Stock:       1, // page-level check: presence implies at least one available
 		URL:         s.url,
-		Location:    loc,
+		Location:    location,
 		Channel:     s.channel,
-		Key:         fmt.Sprintf("%s:%s", s.name, s.url),
-	}}, nil
+		Key:         s.name + ":" + s.url,
+	}
+	return []model.Availability{a}, nil
 }

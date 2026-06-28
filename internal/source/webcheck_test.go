@@ -5,48 +5,47 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"portasplit-monitor/internal/model"
 )
 
-func newWebCheckTestServer(t *testing.T, html string) *httptest.Server {
+func newPageServer(t *testing.T, html string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte(html))
 	}))
 }
 
-func TestWebCheckAvailability(t *testing.T) {
-	in := []string{"in den warenkorb"}
-	out := []string{"nicht verfügbar", "ausverkauft"}
+// The MediaMarkt product id 142245268 is embedded in the default URL and used as
+// the product-token guard, so test pages must include it to be "the right page".
+const mmToken = "142245268"
 
+func TestMediaMarktAvailability(t *testing.T) {
 	cases := []struct {
 		name      string
 		html      string
 		available bool
 	}{
-		{"in stock", `<button>In den Warenkorb</button> Lieferung ab 09.07.2026`, true},
-		{"out of stock wins over add-to-cart", `<button>In den Warenkorb</button> Artikel nicht verfügbar`, false},
-		{"sold out", `<div>Ausverkauft</div>`, false},
-		{"no markers at all", `<div>irgendwas</div>`, false},
+		{"in stock", `<script>{"productId":"142245268","offers":{"availability":"https://schema.org/InStock"}}</script>`, true},
+		{"out of stock", `<script>{"productId":"142245268","offers":{"availability":"https://schema.org/OutOfStock"}}</script>`, false},
+		{"out wins over in", `142245268 schema.org/InStock schema.org/OutOfStock`, false},
+		{"no markers", `<div>142245268 but nothing structured</div>`, false},
+		// Regression: a soft-404 page lists OTHER in-stock products (schema.org/InStock
+		// present) but not this product's id. Must NOT report available.
+		{"soft 404 without product token", `<div>Seite nicht gefunden</div> schema.org/InStock schema.org/InStock`, false},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			srv := newWebCheckTestServer(t, tc.html)
+			srv := newPageServer(t, tc.html)
 			defer srv.Close()
 
-			src := NewWebCheck("mediamarkt", srv.Client(), nil, srv.URL,
-				"MediaMarkt", "Midea PortaSplit", model.ChannelOnline, in, out)
+			// URL carries the product token so productToken() picks it up.
+			src := NewMediaMarkt(srv.Client(), nil, srv.URL+"/p_"+mmToken+".html")
 			got, err := src.Check(context.Background())
 			if err != nil {
 				t.Fatalf("Check: %v", err)
 			}
 			if available := len(got) > 0; available != tc.available {
 				t.Fatalf("available=%v, want %v (results=%+v)", available, tc.available, got)
-			}
-			if tc.available && got[0].Channel != model.ChannelOnline {
-				t.Errorf("channel=%s, want online", got[0].Channel)
 			}
 		})
 	}

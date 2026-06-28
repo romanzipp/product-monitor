@@ -25,8 +25,7 @@ type Monitor struct {
 // New constructs a Monitor. priceMax caps accepted offer prices in whole euros
 // (0 disables the limit). localPrefixes restricts in-store results to stores
 // whose postal code starts with one of the prefixes (empty = no restriction).
-func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger,
-	priceMax int, localPrefixes []string) *Monitor {
+func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, priceMax int, localPrefixes []string) *Monitor {
 	return &Monitor{
 		sources:       sources,
 		store:         st,
@@ -143,8 +142,7 @@ func (m *Monitor) isLocal(a model.Availability) bool {
 			return true
 		}
 	}
-	m.log.Debug("skipping non-local in-store result",
-		"store", a.StoreName, "plz", a.PLZ, "prefixes", m.localPrefixes)
+	m.log.Debug("skipping non-local in-store result", "store", a.StoreName, "plz", a.PLZ, "prefixes", m.localPrefixes)
 	return false
 }
 

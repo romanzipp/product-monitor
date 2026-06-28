@@ -21,7 +21,8 @@ services:
         condition: service_healthy
 
   flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:v3.3.21
+    # v3.5.0 solves braucheklima's current Cloudflare challenge; v3.3.21 times out.
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.0
     restart: unless-stopped
     environment:
       LOG_LEVEL: info

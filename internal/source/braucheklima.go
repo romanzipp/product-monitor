@@ -92,10 +92,8 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 
 // fetch returns the raw feed body, routing through FlareSolverr when configured.
 func (s *BraucheKlimaSource) fetch(ctx context.Context) ([]byte, error) {
-	return getBody(ctx, s.client, s.fs, s.url, map[string]string{
-		"Accept":     "application/json",
-		"User-Agent": userAgent,
-	})
+	headers := map[string]string{"Accept": "application/json", "User-Agent": userAgent}
+	return getBody(ctx, s.client, s.fs, s.url, headers)
 }
 
 // bkLocation builds a human-readable location string, defaulting to "Online"

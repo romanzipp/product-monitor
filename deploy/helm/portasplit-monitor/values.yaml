@@ -43,7 +43,8 @@ flaresolverr:
   enabled: true
   image:
     repository: ghcr.io/flaresolverr/flaresolverr
-    tag: v3.3.21
+    # v3.5.0 solves braucheklima's current Cloudflare challenge; v3.3.21 times out.
+    tag: v3.5.0
     pullPolicy: IfNotPresent
   port: 8191
   env:

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html"
+	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -57,16 +58,23 @@ func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("flaresolverr unexpected status %d", resp.StatusCode)
+	// FlareSolverr reports solve failures as HTTP 500 with the real reason in the
+	// JSON body's "message" field, so decode the body regardless of status code.
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("flaresolverr read: %w", err)
 	}
 
 	var fr fsResponse
-	if err := json.NewDecoder(resp.Body).Decode(&fr); err != nil {
-		return nil, fmt.Errorf("flaresolverr decode: %w", err)
+	if err := json.Unmarshal(body, &fr); err != nil {
+		return nil, fmt.Errorf("flaresolverr decode (HTTP %d): %w", resp.StatusCode, err)
 	}
 	if fr.Status != "ok" {
-		return nil, fmt.Errorf("flaresolverr failed: %s", fr.Message)
+		msg := fr.Message
+		if msg == "" {
+			msg = fmt.Sprintf("HTTP %d", resp.StatusCode)
+		}
+		return nil, fmt.Errorf("flaresolverr: %s", msg)
 	}
 	if fr.Solution.Status != http.StatusOK {
 		return nil, fmt.Errorf("flaresolverr upstream status %d", fr.Solution.Status)

@@ -90,12 +90,10 @@ func Load() (*Config, error) {
 		ObiProductID: envStr("OBI_PRODUCT_ID", "8620890"),
 
 		MediaMarktEnabled: envBool("MEDIAMARKT_ENABLED", true),
-		MediaMarktURL: envStr("MEDIAMARKT_URL",
-			"https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html"),
+		MediaMarktURL:     envStr("MEDIAMARKT_URL", ""),
 
 		EuronicsEnabled: envBool("EURONICS_ENABLED", true),
-		EuronicsURL: envStr("EURONICS_URL",
-			"https://www.euronics.de/haus-und-haushalt/heizen-lueften-kuehlen/kuehlen/split-klimageraete/porta-split-split-klimageraet-a-4065327878899"),
+		EuronicsURL:     envStr("EURONICS_URL", ""),
 
 		HomePLZ:          homePLZ,
 		LocalPLZPrefixes: envCSV("LOCAL_PLZ_PREFIXES", plzRegion(homePLZ)),
@@ -112,8 +110,7 @@ func (c *Config) validate() error {
 		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER are required")
 	}
 	if !c.BraucheKlimaEnabled && !c.ObiEnabled && !c.MediaMarktEnabled && !c.EuronicsEnabled {
-		return fmt.Errorf("at least one source must be enabled " +
-			"(BRAUCHEKLIMA_ENABLED/OBI_ENABLED/MEDIAMARKT_ENABLED/EURONICS_ENABLED)")
+		return fmt.Errorf("at least one source must be enabled (BRAUCHEKLIMA_ENABLED/OBI_ENABLED/MEDIAMARKT_ENABLED/EURONICS_ENABLED)")
 	}
 	if c.CheckInterval <= 0 {
 		return fmt.Errorf("CHECK_INTERVAL must be a positive duration")
