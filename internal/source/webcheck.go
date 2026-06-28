@@ -17,6 +17,23 @@ var schemaOutOfStock = []string{"schema.org/outofstock", "schema.org/soldout", "
 
 var digitRunRe = regexp.MustCompile(`[0-9]{6,}`)
 
+// newSchemaCheck builds a webCheck for a retailer that exposes stock via the
+// standard schema.org JSON-LD Offer availability.
+func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, url, storeName string) webCheck {
+	return webCheck{
+		name:         name,
+		client:       client,
+		fs:           fs,
+		url:          url,
+		storeName:    storeName,
+		product:      "Midea PortaSplit",
+		channel:      model.ChannelOnline,
+		requireToken: productToken(url),
+		inStock:      schemaInStock,
+		outOfStock:   schemaOutOfStock,
+	}
+}
+
 // productToken returns the longest run of digits in a URL (its article id/EAN).
 func productToken(url string) string {
 	longest := ""

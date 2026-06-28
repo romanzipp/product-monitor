@@ -13,7 +13,8 @@ import (
 
 // BraucheKlimaSource reads the aggregated availability feed from braucheklima.de,
 // a JSON array of stores each carrying an `articles` map keyed by product name.
-// The feed sits behind Cloudflare and 403s datacenter IPs, so fs is used there.
+// It emits in-store (physical) results only; online sellers have dedicated
+// per-retailer sources. The feed 403s datacenter IPs, so fs is used there.
 type BraucheKlimaSource struct {
 	client  *http.Client
 	fs      *FlareSolverr // optional
@@ -60,12 +61,10 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 			price = &p
 		}
 
-		// A postal code marks a physical store; online sellers have none.
-		channel := model.ChannelOnline
-		plz := ""
-		if st.PLZ != nil && *st.PLZ != "" {
-			channel = model.ChannelInStore
-			plz = *st.PLZ
+		// Online sellers (no postal code) have dedicated per-retailer sources;
+		// braucheklima covers physical stores only.
+		if st.PLZ == nil || *st.PLZ == "" {
+			continue
 		}
 
 		out = append(out, model.Availability{
@@ -76,8 +75,8 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 			Price:       price,
 			URL:         art.URL,
 			Location:    bkLocation(st),
-			Channel:     channel,
-			PLZ:         plz,
+			Channel:     model.ChannelInStore,
+			PLZ:         *st.PLZ,
 			Key:         "braucheklima:" + strconv.Itoa(art.StoresArticlesID),
 		})
 	}

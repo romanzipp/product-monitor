@@ -64,6 +64,21 @@ func main() {
 	if cfg.GlobusEnabled {
 		sources = append(sources, source.NewGlobus(httpClient, flareSolverr, cfg.GlobusURL))
 	}
+	if cfg.AmazonEnabled {
+		sources = append(sources, source.NewAmazon(httpClient, flareSolverr, cfg.AmazonURL))
+	}
+	if cfg.BauhausEnabled {
+		sources = append(sources, source.NewBauhaus(httpClient, flareSolverr, cfg.BauhausURL))
+	}
+	if cfg.HagebauEnabled {
+		sources = append(sources, source.NewHagebau(httpClient, flareSolverr, cfg.HagebauURL))
+	}
+	if cfg.HornbachEnabled {
+		sources = append(sources, source.NewHornbach(httpClient, flareSolverr, cfg.HornbachURL))
+	}
+	if cfg.ToomEnabled {
+		sources = append(sources, source.NewToom(httpClient, flareSolverr, cfg.ToomURL))
+	}
 
 	if len(sources) == 0 {
 		log.Error("no sources enabled, exiting")

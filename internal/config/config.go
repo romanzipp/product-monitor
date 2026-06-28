@@ -46,6 +46,21 @@ type Config struct {
 	GlobusEnabled bool
 	GlobusURL     string
 
+	AmazonEnabled bool
+	AmazonURL     string
+
+	BauhausEnabled bool
+	BauhausURL     string
+
+	HagebauEnabled bool
+	HagebauURL     string
+
+	HornbachEnabled bool
+	HornbachURL     string
+
+	ToomEnabled bool
+	ToomURL     string
+
 	// HomePLZ is the single location reference: OBI queries against it and the
 	// in-store filter prefixes default to its leading digits.
 	HomePLZ string
@@ -93,6 +108,21 @@ func Load() (*Config, error) {
 		GlobusEnabled: envBool("GLOBUS_ENABLED", true),
 		GlobusURL:     envStr("GLOBUS_URL", ""),
 
+		AmazonEnabled: envBool("AMAZON_ENABLED", true),
+		AmazonURL:     envStr("AMAZON_URL", ""),
+
+		BauhausEnabled: envBool("BAUHAUS_ENABLED", true),
+		BauhausURL:     envStr("BAUHAUS_URL", ""),
+
+		HagebauEnabled: envBool("HAGEBAU_ENABLED", true),
+		HagebauURL:     envStr("HAGEBAU_URL", ""),
+
+		HornbachEnabled: envBool("HORNBACH_ENABLED", true),
+		HornbachURL:     envStr("HORNBACH_URL", ""),
+
+		ToomEnabled: envBool("TOOM_ENABLED", true),
+		ToomURL:     envStr("TOOM_URL", ""),
+
 		HomePLZ:          homePLZ,
 		LocalPLZPrefixes: envCSV("LOCAL_PLZ_PREFIXES", plzRegion(homePLZ)),
 	}
@@ -107,8 +137,9 @@ func (c *Config) validate() error {
 	if c.PushoverToken == "" || c.PushoverUser == "" {
 		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER are required")
 	}
-	if !c.BraucheKlimaEnabled && !c.ObiEnabled && !c.MediaMarktEnabled && !c.EuronicsEnabled && !c.GlobusEnabled {
-		return fmt.Errorf("at least one source must be enabled (BRAUCHEKLIMA_ENABLED/OBI_ENABLED/MEDIAMARKT_ENABLED/EURONICS_ENABLED/GLOBUS_ENABLED)")
+	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled
+	if !anySource {
+		return fmt.Errorf("at least one source must be enabled (*_ENABLED)")
 	}
 	if c.CheckInterval <= 0 {
 		return fmt.Errorf("CHECK_INTERVAL must be a positive duration")

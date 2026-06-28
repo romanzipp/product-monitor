@@ -1,10 +1,6 @@
 package source
 
-import (
-	"net/http"
-
-	"portasplit-monitor/internal/model"
-)
+import "net/http"
 
 // mediaMarktDefaultURL is the PortaSplit product page (grey, 42 m² variant).
 const mediaMarktDefaultURL = "https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html"
@@ -20,18 +16,5 @@ func NewMediaMarkt(client *http.Client, fs *FlareSolverr, url string) *MediaMark
 	if url == "" {
 		url = mediaMarktDefaultURL
 	}
-	return &MediaMarktSource{
-		webCheck: webCheck{
-			name:         "mediamarkt",
-			client:       client,
-			fs:           fs,
-			url:          url,
-			storeName:    "MediaMarkt",
-			product:      "Midea PortaSplit",
-			channel:      model.ChannelOnline,
-			requireToken: productToken(url),
-			inStock:      schemaInStock,
-			outOfStock:   schemaOutOfStock,
-		},
-	}
+	return &MediaMarktSource{newSchemaCheck("mediamarkt", client, fs, url, "MediaMarkt")}
 }

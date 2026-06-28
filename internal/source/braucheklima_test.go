@@ -9,8 +9,8 @@ import (
 	"portasplit-monitor/internal/model"
 )
 
-// feedFixture mirrors the real braucheklima feed shape: an online seller with no
-// address, a local physical store, and a far-away physical store.
+// feedFixture mirrors the real braucheklima feed shape: an online seller (no
+// address, must be skipped), a local physical store, and a far-away one.
 const feedFixture = `[
   {"name":"Amazon","lat":null,"lon":null,"plz":null,"city":null,"street":null,
    "articles":{"Midea Portasplit":{"storesArticlesId":1,"url":"https://amazon.de/x",
@@ -43,13 +43,12 @@ func TestBraucheKlimaChannelClassification(t *testing.T) {
 		byStore[a.StoreName] = a
 	}
 
-	// Out-of-stock store must be excluded.
-	if len(got) != 3 {
-		t.Fatalf("expected 3 in-stock results, got %d: %+v", len(got), got)
+	// In-store only: online seller (Amazon) and out-of-stock store are excluded.
+	if len(got) != 2 {
+		t.Fatalf("expected 2 in-store results, got %d: %+v", len(got), got)
 	}
-
-	if a := byStore["Amazon"]; a.Channel != model.ChannelOnline || a.PLZ != "" {
-		t.Errorf("Amazon: want online/empty PLZ, got %s/%q", a.Channel, a.PLZ)
+	if _, ok := byStore["Amazon"]; ok {
+		t.Errorf("Amazon (online) must be excluded from braucheklima")
 	}
 	if a := byStore["Globus Baumarkt Fulda"]; a.Channel != model.ChannelInStore || a.PLZ != "36100" {
 		t.Errorf("Globus Fulda: want instore/36100, got %s/%q", a.Channel, a.PLZ)

@@ -1,10 +1,6 @@
 package source
 
-import (
-	"net/http"
-
-	"portasplit-monitor/internal/model"
-)
+import "net/http"
 
 // euronicsDefaultURL is the PortaSplit product page on euronics.de. When the
 // product is delisted Euronics serves a soft-404 here (handled by the token guard).
@@ -21,18 +17,5 @@ func NewEuronics(client *http.Client, fs *FlareSolverr, url string) *EuronicsSou
 	if url == "" {
 		url = euronicsDefaultURL
 	}
-	return &EuronicsSource{
-		webCheck: webCheck{
-			name:         "euronics",
-			client:       client,
-			fs:           fs,
-			url:          url,
-			storeName:    "Euronics",
-			product:      "Midea PortaSplit",
-			channel:      model.ChannelOnline,
-			requireToken: productToken(url),
-			inStock:      schemaInStock,
-			outOfStock:   schemaOutOfStock,
-		},
-	}
+	return &EuronicsSource{newSchemaCheck("euronics", client, fs, url, "Euronics")}
 }

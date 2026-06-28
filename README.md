@@ -21,11 +21,23 @@ notification. Offers above `PRICE_MAX` are ignored.
 
 | Source | What it polls | Channels |
 | --- | --- | --- |
-| `braucheklima` | `https://braucheklima.de/api/availability` (aggregated feed: OBI, Toom, Hagebau, Bauhaus, Hornbach, Globus, Amazon — online sellers and ~1200 physical stores) | online + in-store |
+| `braucheklima` | `https://braucheklima.de/api/availability` (aggregated feed, ~1200 physical stores) | in-store only |
 | `obi` | `https://www.obi.de/api/pdp/v1/availability/<id>` (single product) | online + in-store |
-| `mediamarkt` | MediaMarkt product page, in-stock marker check (`MEDIAMARKT_URL`) | online |
-| `euronics` | Euronics product page, in-stock marker check (`EURONICS_URL`) | online |
-| `globus` | Globus Baumarkt product page, in-stock marker check (`GLOBUS_URL`) | online |
+| `mediamarkt` | MediaMarkt product page (`MEDIAMARKT_URL`) | online |
+| `euronics` | Euronics product page (`EURONICS_URL`) | online |
+| `globus` | Globus Baumarkt product page (`GLOBUS_URL`) | online |
+| `amazon` | Amazon product page, buybox check (`AMAZON_URL`) | online |
+| `bauhaus` | Bauhaus product page (`BAUHAUS_URL`) | online |
+| `hagebau` | Hagebau product page (`HAGEBAU_URL`) | online |
+| `hornbach` | Hornbach product page (`HORNBACH_URL`) | online |
+| `toom` | toom product page (`TOOM_URL`) | online |
+
+Online retailers each have their own source (direct product-page check); the
+`braucheklima` feed now contributes physical-store stock only, so online stores
+are not double-counted. Online product-page sources rely on `FlareSolverr`
+(several retailers are anti-bot protected or JS-rendered) and most use the
+`schema.org` JSON-LD availability; Amazon has no such marker, so its buybox
+add-to-cart button is used and it reports no price.
 
 ### Online vs in-store
 

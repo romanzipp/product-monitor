@@ -1,10 +1,6 @@
 package source
 
-import (
-	"net/http"
-
-	"portasplit-monitor/internal/model"
-)
+import "net/http"
 
 // globusDefaultURL is the PortaSplit product page on globus-baumarkt.de. While
 // sold out Globus serves a 404 here (handled by the token guard).
@@ -21,18 +17,5 @@ func NewGlobus(client *http.Client, fs *FlareSolverr, url string) *GlobusSource 
 	if url == "" {
 		url = globusDefaultURL
 	}
-	return &GlobusSource{
-		webCheck: webCheck{
-			name:         "globus",
-			client:       client,
-			fs:           fs,
-			url:          url,
-			storeName:    "Globus Baumarkt",
-			product:      "Midea PortaSplit",
-			channel:      model.ChannelOnline,
-			requireToken: productToken(url),
-			inStock:      schemaInStock,
-			outOfStock:   schemaOutOfStock,
-		},
-	}
+	return &GlobusSource{newSchemaCheck("globus", client, fs, url, "Globus Baumarkt")}
 }
