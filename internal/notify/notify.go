@@ -44,7 +44,7 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 	form := url.Values{}
 	form.Set("token", p.token)
 	form.Set("user", p.user)
-	form.Set("title", truncate(fmt.Sprintf("PortaSplit %s: %s", channelLabel(a.Channel), a.StoreName), 250))
+	form.Set("title", truncate(fmt.Sprintf("PortaSplit verfügbar: %s 🔥", a.StoreName), 250))
 	form.Set("message", formatMessage(a))
 	form.Set("priority", strconv.Itoa(p.priority))
 	if p.device != "" {
@@ -69,28 +69,19 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 	return nil
 }
 
-func channelLabel(c model.Channel) string {
-	if c == model.ChannelInStore {
-		return "In store"
-	}
-	return "Online"
-}
-
 func formatMessage(a model.Availability) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "%s\n", a.ProductName)
-	fmt.Fprintf(&b, "%s (%s)\n", a.StoreName, channelLabel(a.Channel))
-	if a.Location != "" && a.Location != "Online" {
-		fmt.Fprintf(&b, "%s\n", a.Location)
-	}
-	fmt.Fprintf(&b, "Stock: %d\n", a.Stock)
 	if a.Price != nil {
 		fmt.Fprintf(&b, "Price: %.2f €\n", *a.Price)
+	} else {
+		fmt.Fprintf(&b, "Price: n/a\n")
 	}
+	fmt.Fprintf(&b, "Stock: %d\n", a.Stock)
 	if a.URL != "" {
-		fmt.Fprintf(&b, "%s\n", a.URL)
+		fmt.Fprintf(&b, "%s via %s", a.URL, a.Source)
+	} else {
+		fmt.Fprintf(&b, "via %s", a.Source)
 	}
-	fmt.Fprintf(&b, "via %s", a.Source)
 	return b.String()
 }
 
