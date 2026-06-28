@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"portasplit-monitor/internal/model"
@@ -31,7 +32,39 @@ func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, url, sto
 		requireToken: productToken(url),
 		inStock:      schemaInStock,
 		outOfStock:   schemaOutOfStock,
+		wantPrice:    true,
 	}
+}
+
+// schema.org Offer price, as microdata (<meta itemprop="price" content="…">) or
+// JSON-LD ("price": 799.00). The JSON form requires a digit after the colon to
+// skip label strings like "price":"Preis".
+var priceMicroRe = regexp.MustCompile(`itemprop="price"[^>]*content="([0-9](?:[0-9.,]*[0-9])?)"`)
+var priceJSONRe = regexp.MustCompile(`"price"\s*:\s*"?([0-9](?:[0-9.,]*[0-9])?)`)
+
+// parsePrice extracts the product price from a (lowercased) page, or nil.
+func parsePrice(html string) *float64 {
+	var raw string
+	if m := priceMicroRe.FindStringSubmatch(html); m != nil {
+		raw = m[1]
+	} else if m := priceJSONRe.FindStringSubmatch(html); m != nil {
+		raw = m[1]
+	}
+	if raw == "" {
+		return nil
+	}
+	// Normalise German "2.949,99" and "799,00" to a parseable form.
+	if strings.Contains(raw, ".") && strings.Contains(raw, ",") {
+		raw = strings.ReplaceAll(raw, ".", "")
+		raw = strings.ReplaceAll(raw, ",", ".")
+	} else if strings.Contains(raw, ",") {
+		raw = strings.ReplaceAll(raw, ",", ".")
+	}
+	f, err := strconv.ParseFloat(raw, 64)
+	if err != nil || f <= 0 {
+		return nil
+	}
+	return &f
 }
 
 // productToken returns the longest run of digits in a URL (its article id/EAN).
@@ -59,6 +92,7 @@ type webCheck struct {
 	requireToken string // must appear on the page to confirm it is the right one
 	inStock      []string
 	outOfStock   []string
+	wantPrice    bool // extract the schema.org price from the page
 }
 
 func (s *webCheck) Name() string {
@@ -114,6 +148,9 @@ func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
 		Location:    location,
 		Channel:     s.channel,
 		Key:         s.name + ":" + s.url,
+	}
+	if s.wantPrice {
+		a.Price = parsePrice(html)
 	}
 	return []model.Availability{a}, nil
 }

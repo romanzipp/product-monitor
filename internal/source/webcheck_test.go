@@ -7,6 +7,35 @@ import (
 	"testing"
 )
 
+func TestParsePrice(t *testing.T) {
+	cases := []struct {
+		name string
+		html string
+		want float64 // 0 means nil expected
+	}{
+		{"microdata", `<meta itemprop="price" content="39.89" />`, 39.89},
+		{"json number", `"price":2949.99`, 2949.99},
+		{"skips label, finds number", `"price":"preis exkl. versand" "price":799.00`, 799.00},
+		{"german comma", `"price":"799,00"`, 799.00},
+		{"german thousands", `"price":"2.949,99"`, 2949.99},
+		{"none", `<div>no price here</div>`, 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := parsePrice(tc.html)
+			if tc.want == 0 {
+				if got != nil {
+					t.Fatalf("want nil, got %v", *got)
+				}
+				return
+			}
+			if got == nil || *got != tc.want {
+				t.Fatalf("want %v, got %v", tc.want, got)
+			}
+		})
+	}
+}
+
 func newPageServer(t *testing.T, html string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
