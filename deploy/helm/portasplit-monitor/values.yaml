@@ -28,6 +28,7 @@ env:
   OBI_PRODUCT_ID: "8620890"
   MEDIAMARKT_ENABLED: "true"
   EURONICS_ENABLED: "true"
+  GLOBUS_ENABLED: "true"
   # Home postal code: the single location reference. OBI queries against it and
   # the in-store filter prefix defaults to its region (first two digits).
   LOCAL_PLZ: "36037"

@@ -65,6 +65,9 @@ func main() {
 	if cfg.EuronicsEnabled {
 		sources = append(sources, source.NewEuronics(httpClient, flareSolverr, cfg.EuronicsURL))
 	}
+	if cfg.GlobusEnabled {
+		sources = append(sources, source.NewGlobus(httpClient, flareSolverr, cfg.GlobusURL))
+	}
 
 	if len(sources) == 0 {
 		log.Error("no sources enabled, exiting")

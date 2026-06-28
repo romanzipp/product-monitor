@@ -2,6 +2,7 @@ package source
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"regexp"
 	"strings"
@@ -50,6 +51,9 @@ func (s *webCheck) Name() string {
 func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
 	headers := map[string]string{"User-Agent": browserUserAgent, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "de-DE,de;q=0.9"}
 	body, err := getBody(ctx, s.client, s.fs, s.url, headers)
+	if errors.Is(err, errNotFound) {
+		return []model.Availability{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}

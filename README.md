@@ -25,6 +25,7 @@ notification. Offers above `PRICE_MAX` are ignored.
 | `obi` | `https://www.obi.de/api/pdp/v1/availability/<id>` (single product) | online + in-store |
 | `mediamarkt` | MediaMarkt product page, in-stock marker check (`MEDIAMARKT_URL`) | online |
 | `euronics` | Euronics product page, in-stock marker check (`EURONICS_URL`) | online |
+| `globus` | Globus Baumarkt product page, in-stock marker check (`GLOBUS_URL`) | online |
 
 ### Online vs in-store
 

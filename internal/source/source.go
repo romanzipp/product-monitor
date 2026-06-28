@@ -3,10 +3,15 @@ package source
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 )
+
+// errNotFound is returned when a page is 404/410 (delisted), which webCheck
+// sources treat as "not available" rather than a hard error.
+var errNotFound = errors.New("not found")
 
 const userAgent = "portasplit-monitor/1.0"
 
@@ -33,6 +38,9 @@ func getBody(ctx context.Context, client *http.Client, fs *FlareSolverr, url str
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
+		return nil, errNotFound
+	}
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
 	}

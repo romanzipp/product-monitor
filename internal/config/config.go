@@ -44,6 +44,9 @@ type Config struct {
 	EuronicsEnabled bool
 	EuronicsURL     string
 
+	GlobusEnabled bool
+	GlobusURL     string
+
 	// HomePLZ is the single location reference: OBI queries against it and the
 	// in-store filter prefixes default to its leading digits.
 	HomePLZ string
@@ -89,6 +92,9 @@ func Load() (*Config, error) {
 		EuronicsEnabled: envBool("EURONICS_ENABLED", true),
 		EuronicsURL:     envStr("EURONICS_URL", ""),
 
+		GlobusEnabled: envBool("GLOBUS_ENABLED", true),
+		GlobusURL:     envStr("GLOBUS_URL", ""),
+
 		HomePLZ:          homePLZ,
 		LocalPLZPrefixes: envCSV("LOCAL_PLZ_PREFIXES", plzRegion(homePLZ)),
 	}
@@ -103,8 +109,8 @@ func (c *Config) validate() error {
 	if c.PushoverToken == "" || c.PushoverUser == "" {
 		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER are required")
 	}
-	if !c.BraucheKlimaEnabled && !c.ObiEnabled && !c.MediaMarktEnabled && !c.EuronicsEnabled {
-		return fmt.Errorf("at least one source must be enabled (BRAUCHEKLIMA_ENABLED/OBI_ENABLED/MEDIAMARKT_ENABLED/EURONICS_ENABLED)")
+	if !c.BraucheKlimaEnabled && !c.ObiEnabled && !c.MediaMarktEnabled && !c.EuronicsEnabled && !c.GlobusEnabled {
+		return fmt.Errorf("at least one source must be enabled (BRAUCHEKLIMA_ENABLED/OBI_ENABLED/MEDIAMARKT_ENABLED/EURONICS_ENABLED/GLOBUS_ENABLED)")
 	}
 	if c.CheckInterval <= 0 {
 		return fmt.Errorf("CHECK_INTERVAL must be a positive duration")

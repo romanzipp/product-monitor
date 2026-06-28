@@ -71,6 +71,9 @@ func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("flaresolverr: %s", msg)
 	}
+	if fr.Solution.Status == http.StatusNotFound || fr.Solution.Status == http.StatusGone {
+		return nil, errNotFound
+	}
 	if fr.Solution.Status != http.StatusOK {
 		return nil, fmt.Errorf("flaresolverr upstream status %d", fr.Solution.Status)
 	}
