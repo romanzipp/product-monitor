@@ -2,48 +2,51 @@
 #
 # deploy.sh - runs ON YOUR LOCAL MACHINE.
 #
-# Cross-compiles a static linux binary, uploads it (plus the unit + a local
-# .env if present) to a remote host, and invokes setup.sh there via SSH to
-# install it as a systemd service. Kubernetes deployment is handled separately
-# via the Helm chart in deploy/helm/.
+# Syncs the repo to a remote host and (re)builds + restarts it with Docker
+# Compose. Kubernetes deployment is handled separately via the Helm chart in
+# deploy/helm/.
+#
+# Requirements on the remote host: docker + the docker compose plugin, and an
+# SSH user that can run docker (in the `docker` group or via sudo).
 #
 # Usage:
 #   REMOTE=user@host ./deploy/deploy.sh
-#   REMOTE=user@host GOARCH=arm64 ./deploy/deploy.sh
+#   REMOTE=user@host INSTALL_DIR=/srv/portasplit-monitor ./deploy/deploy.sh
 #
 set -euo pipefail
 
 REMOTE="${REMOTE:?Set REMOTE=user@host}"
-ARCH="${GOARCH:-amd64}"
-REMOTE_TMP="${REMOTE_TMP:-/tmp/portasplit-monitor-deploy}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/portasplit-monitor}"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 log() { echo "[deploy] $*"; }
 
-log "building linux/$ARCH (CGO disabled, static)..."
-mkdir -p "$ROOT/bin"
-(
-  cd "$ROOT"
-  CGO_ENABLED=0 GOOS=linux GOARCH="$ARCH" \
-    go build -trimpath -ldflags "-s -w" -o "bin/portasplit-monitor-linux-$ARCH" ./cmd/portasplit-monitor
-)
+log "ensuring remote dir $INSTALL_DIR exists..."
+ssh "$REMOTE" "sudo mkdir -p '$INSTALL_DIR' && sudo chown \"\$(id -un):\$(id -gn)\" '$INSTALL_DIR'"
 
-log "preparing remote staging dir $REMOTE_TMP..."
-ssh "$REMOTE" "rm -rf '$REMOTE_TMP' && mkdir -p '$REMOTE_TMP'"
-
-log "uploading binary + service unit + setup script..."
-scp -q "$ROOT/bin/portasplit-monitor-linux-$ARCH" "$REMOTE:$REMOTE_TMP/portasplit-monitor"
-scp -q "$ROOT/deploy/portasplit-monitor.service" "$REMOTE:$REMOTE_TMP/portasplit-monitor.service"
-scp -q "$ROOT/deploy/setup.sh" "$REMOTE:$REMOTE_TMP/setup.sh"
+# Sync the build context. --delete keeps the remote in lockstep with the repo;
+# excluded paths (notably .env and the SQLite data) are never touched/removed.
+log "syncing source to $REMOTE:$INSTALL_DIR ..."
+rsync -az --delete \
+  --exclude '.git/' \
+  --exclude 'bin/' \
+  --exclude 'dist/' \
+  --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
+  --exclude '.env' \
+  "$ROOT/" "$REMOTE:$INSTALL_DIR/"
 
 # Ship a local .env ONLY the first time, so server-side secrets are never
-# clobbered on later deploys. setup.sh also guards against overwriting.
-if [[ -f "$ROOT/.env" ]]; then
-  log "uploading local .env (installed only if absent on server)..."
-  scp -q "$ROOT/.env" "$REMOTE:$REMOTE_TMP/.env"
+# clobbered on later deploys.
+if ssh "$REMOTE" "test -f '$INSTALL_DIR/.env'"; then
+  log ".env already present on remote, leaving it untouched"
+elif [[ -f "$ROOT/.env" ]]; then
+  log "uploading local .env (first deploy)..."
+  scp -q "$ROOT/.env" "$REMOTE:$INSTALL_DIR/.env"
+else
+  log "WARNING: no .env on remote and none locally - create $INSTALL_DIR/.env before the app can start"
 fi
 
-log "running setup.sh on remote..."
-ssh "$REMOTE" "sudo bash '$REMOTE_TMP/setup.sh' '$REMOTE_TMP'"
+log "building + starting via docker compose on remote..."
+ssh "$REMOTE" "cd '$INSTALL_DIR' && docker compose up -d --build"
 
-log "done."
+log "done. Tail logs with: ssh $REMOTE 'cd $INSTALL_DIR && docker compose logs -f'"

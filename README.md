@@ -19,10 +19,28 @@ notification. Offers above `PRICE_MAX` are ignored.
 
 ## Sources
 
-| Source | What it polls |
-| --- | --- |
-| `braucheklima` | `https://braucheklima.de/api/availability` (aggregated, all stores) |
-| `obi` | `https://www.obi.de/api/pdp/v1/availability/<id>` (single product) |
+| Source | What it polls | Channels |
+| --- | --- | --- |
+| `braucheklima` | `https://braucheklima.de/api/availability` (aggregated feed: OBI, Toom, Hagebau, Bauhaus, Hornbach, Globus, Amazon — online sellers and ~1200 physical stores) | online + in-store |
+| `obi` | `https://www.obi.de/api/pdp/v1/availability/<id>` (single product) | online + in-store |
+| `mediamarkt` | MediaMarkt product page, in-stock marker check (`MEDIAMARKT_URL`) | online |
+| `euronics` | Euronics product page, in-stock marker check (`EURONICS_URL`) | online |
+
+### Online vs in-store
+
+Each result is tagged as **online** (shipped/delivery) or **in-store**
+(physically stocked for pickup); the Pushover message states which. In-store
+results are filtered to nearby stores via `LOCAL_PLZ_PREFIXES` (default `36`, the
+Fulda region) — a store is kept only if its postal code starts with one of the
+listed prefixes. Online results are never filtered.
+
+> Note: Amazon and Globus Baumarkt (including the Fulda store) are already in the
+> `braucheklima` aggregated feed, so they need no dedicated source. `mediamarkt`
+> and `euronics` are not in that feed and are checked directly by looking for an
+> in-stock marker in the product page HTML; this is more brittle than a JSON feed
+> and may need marker tuning if a retailer changes its markup. Both effectively
+> require `FLARESOLVERR_URL` (their pages are anti-bot protected) and currently
+> report online availability only, not per-market in-store stock.
 
 > Note: `braucheklima.de` sits behind Cloudflare and blocks datacenter IPs
 > (403). Either run it from a residential network (e.g. the homelab cluster),
@@ -43,23 +61,56 @@ file. Copy `.env.example` to `.env` and fill in your Pushover credentials.
 The only required values are `PUSHOVER_TOKEN` and `PUSHOVER_USER`. Everything
 else has sensible defaults.
 
-## Run locally
+## Run locally (Go)
 
 ```bash
 cp .env.example .env   # then edit PUSHOVER_TOKEN / PUSHOVER_USER
 make run
 ```
 
-## SSH + systemd host (deploy.sh)
+## Run with Docker Compose
 
-`deploy/deploy.sh` + `deploy/setup.sh` install the binary under
-`/opt/portasplit-monitor` on a remote Linux host and run it as a
-`portasplit-monitor` systemd service. This path is independent of the
+`docker-compose.yml` runs the monitor alongside a
+[FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) container, mirroring
+the Helm chart. The monitor reaches FlareSolverr over the compose network
+(`FLARESOLVERR_URL=http://flaresolverr:8191`, set in the compose file), so the
+braucheklima feed works even from a datacenter IP. The SQLite database persists
+in the named `monitor-data` volume.
+
+```bash
+cp .env.example .env   # then edit PUSHOVER_TOKEN / PUSHOVER_USER
+docker compose up -d --build
+```
+
+`--build` is required on the first run (and after code changes), since the
+`monitor` image is built from the local `Dockerfile` rather than pulled. Useful
+follow-ups:
+
+```bash
+docker compose logs -f          # tail logs
+docker compose up -d --build    # redeploy after changes
+docker compose down             # stop (add -v to also drop the DB volume)
+```
+
+To fetch braucheklima directly without FlareSolverr (residential IP only), drop
+the `FLARESOLVERR_URL` line from the `monitor` service and remove the
+`flaresolverr` service.
+
+## Deploy to a host (Docker Compose)
+
+`deploy/deploy.sh` syncs the repo to a remote Linux host over SSH and runs
+`docker compose up -d --build` there, so the host needs Docker with the compose
+plugin and an SSH user that can run Docker. This path is independent of the
 Kubernetes deployment (which uses the Helm chart + Argo).
 
 ```bash
 REMOTE=user@host make deploy
+# or: REMOTE=user@host INSTALL_DIR=/srv/portasplit-monitor ./deploy/deploy.sh
 ```
+
+The repo is synced to `/opt/portasplit-monitor` (override with `INSTALL_DIR`).
+Your local `.env` is uploaded only on the first deploy; later runs leave the
+server-side `.env` and the database volume untouched.
 
 ## Adding a source
 

@@ -18,6 +18,10 @@ RUN GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} \
     go build -trimpath -ldflags="-s -w" \
       -o /out/portasplit-monitor ./cmd/portasplit-monitor
 
+# Staged empty data dir, copied below with nonroot ownership so a fresh mounted
+# volume inherits it and the nonroot process can create the SQLite DB.
+RUN mkdir -p /data
+
 # -----------------------------------------------------------
 FROM gcr.io/distroless/static-debian12:nonroot
 ARG VERSION=dev
@@ -26,7 +30,9 @@ LABEL org.opencontainers.image.version=$VERSION
 WORKDIR /app
 COPY --from=builder /out/portasplit-monitor /app/portasplit-monitor
 
-# SQLite database lives on a mounted volume (see Helm chart / -v /data).
+# SQLite database lives on a mounted volume (see Helm chart / -v /data). The dir
+# is nonroot-owned so a freshly created volume is writable by the app user.
+COPY --from=builder --chown=nonroot:nonroot /data /data
 ENV DB_PATH=/data/portasplit-monitor.db
 VOLUME ["/data"]
 
