@@ -1,0 +1,72 @@
+image:
+  repository: registry.apex.romanzipp.cloud/portasplit-monitor-image
+  pullPolicy: IfNotPresent
+  # Defaults to .Chart.AppVersion (== the git tag the chart was packaged from).
+  tag: ""
+
+# Keep K8s resource names as `portasplit-monitor` even though the chart is
+# `portasplit-monitor-chart`.
+fullnameOverride: portasplit-monitor
+
+# Cluster-specific image pull credentials. Populated from the cluster
+# (e.g. zot-pull-secret reflected by Reflector). Example:
+#   imagePullSecrets:
+#     - name: zot-pull-secret
+imagePullSecrets: []
+
+# Non-secret runtime config. Matches the env vars in .env.example.
+# Credentials (PUSHOVER_TOKEN, PUSHOVER_USER) come from envFromSecret.
+env:
+  CHECK_INTERVAL: 5m
+  HTTP_TIMEOUT: 30s
+  DB_PATH: /data/portasplit-monitor.db
+  DEBUG: "false"
+  PRICE_MAX: "0"
+  BRAUCHEKLIMA_ENABLED: "true"
+  BRAUCHEKLIMA_PRODUCT: "Midea Portasplit"
+  OBI_ENABLED: "true"
+  OBI_PRODUCT_ID: "8620890"
+  OBI_POSTAL_CODE: "36043"
+
+# Reference to an existing Secret whose keys are injected as env vars. Holds
+# the Pushover credentials (PUSHOVER_TOKEN, PUSHOVER_USER). Cluster-specific.
+# Example:
+#   envFromSecret:
+#     name: portasplit-monitor
+envFromSecret:
+  name: ""
+
+persistence:
+  enabled: true
+  storageClass: ""
+  size: 1Gi
+  # SQLite + WAL files. ReadWriteOnce + Recreate is intentional (single replica).
+  accessMode: ReadWriteOnce
+  mountPath: /data
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 64Mi
+  limits:
+    memory: 256Mi
+
+# Optional HTTP probes. Disabled by default: this is a background poller with
+# no HTTP server. Enable if a health endpoint is added later. Example:
+#   probes:
+#     liveness:
+#       httpGet: { path: /healthz, port: http }
+#       initialDelaySeconds: 5
+probes: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ ALL ]

@@ -1,0 +1,35 @@
+# This is a TEMPLATE processed by setup.sh before installation.
+# Placeholders @INSTALL_DIR@, @USER@, @GROUP@ are substituted at deploy time,
+# so change INSTALL_DIR/USER_NAME via the deploy env rather than editing here.
+
+[Unit]
+Description=PortaSplit stock monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=@USER@
+Group=@GROUP@
+WorkingDirectory=@INSTALL_DIR@
+EnvironmentFile=@INSTALL_DIR@/.env
+ExecStart=@INSTALL_DIR@/portasplit-monitor
+Restart=on-failure
+RestartSec=10
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+ReadWritePaths=@INSTALL_DIR@
+
+[Install]
+WantedBy=multi-user.target

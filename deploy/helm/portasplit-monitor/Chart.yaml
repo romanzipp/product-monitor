@@ -1,0 +1,7 @@
+apiVersion: v2
+name: portasplit-monitor-chart
+description: Midea PortaSplit stock monitor with Pushover notifications
+type: application
+# version and appVersion are overwritten at package time by the release workflow.
+version: 0.0.0
+appVersion: "0.0.0"

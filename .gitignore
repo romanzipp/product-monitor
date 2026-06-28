@@ -1,0 +1,15 @@
+# build output
+/bin/
+/dist/
+
+# sqlite database + WAL files
+*.db
+*.db-wal
+*.db-shm
+
+# local env / secrets
+.env
+
+# editor / OS noise
+.DS_Store
+*.swp
