@@ -20,7 +20,6 @@ env:
   CHECK_INTERVAL: 5m
   HTTP_TIMEOUT: 30s
   DB_PATH: /data/portasplit-monitor.db
-  DEBUG: "false"
   PRICE_MAX: "0"
   BRAUCHEKLIMA_ENABLED: "true"
   BRAUCHEKLIMA_PRODUCT: "Midea Portasplit"

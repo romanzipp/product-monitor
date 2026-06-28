@@ -18,7 +18,6 @@ type Config struct {
 	CheckInterval time.Duration
 	HTTPTimeout   time.Duration
 	DBPath        string
-	Debug         bool
 	PriceMax      int // whole euros; 0 = no limit
 
 	PushoverToken    string
@@ -68,7 +67,6 @@ func Load() (*Config, error) {
 		CheckInterval: envDuration("CHECK_INTERVAL", 5*time.Minute),
 		HTTPTimeout:   envDuration("HTTP_TIMEOUT", 30*time.Second),
 		DBPath:        envStr("DB_PATH", "klima.db"),
-		Debug:         envBool("DEBUG", false),
 		PriceMax:      envInt("PRICE_MAX", 0),
 
 		PushoverToken:    os.Getenv("PUSHOVER_TOKEN"),
