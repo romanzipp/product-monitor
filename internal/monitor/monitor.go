@@ -61,7 +61,12 @@ func (m *Monitor) tick(ctx context.Context) {
 			m.log.Error("source check failed", "source", src.Name(), "err", err)
 			continue
 		}
-		m.log.Debug("source checked", "source", src.Name(), "available", len(avail))
+		stock, minPrice := availStats(avail)
+		attrs := []any{"source", src.Name(), "available", len(avail), "stock", stock}
+		if minPrice != nil {
+			attrs = append(attrs, "min_price", *minPrice)
+		}
+		m.log.Debug("source checked", attrs...)
 		for _, a := range avail {
 			if !m.withinBudget(a) {
 				continue
@@ -148,6 +153,18 @@ func (m *Monitor) withinBudget(a model.Availability) bool {
 		return false
 	}
 	return true
+}
+
+// availStats sums the stock and finds the lowest known price across results.
+func availStats(avail []model.Availability) (stock int, minPrice *float64) {
+	for _, a := range avail {
+		stock += a.Stock
+		if a.Price != nil && (minPrice == nil || *a.Price < *minPrice) {
+			p := *a.Price
+			minPrice = &p
+		}
+	}
+	return stock, minPrice
 }
 
 func sourceNames(sources []model.Source) []string {
