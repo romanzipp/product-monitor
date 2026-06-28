@@ -31,6 +31,11 @@ type Config struct {
 	BraucheKlimaURL     string
 	BraucheKlimaProduct string
 
+	// FlareSolverrURL, when set, routes Cloudflare-protected sources
+	// (braucheklima) through a FlareSolverr proxy. Empty disables it.
+	FlareSolverrURL     string
+	FlareSolverrTimeout time.Duration
+
 	ObiEnabled    bool
 	ObiProductID  string
 	ObiPostalCode string
@@ -58,6 +63,9 @@ func Load() (*Config, error) {
 		BraucheKlimaEnabled: envBool("BRAUCHEKLIMA_ENABLED", true),
 		BraucheKlimaURL:     envStr("BRAUCHEKLIMA_URL", "https://braucheklima.de/api/availability"),
 		BraucheKlimaProduct: envStr("BRAUCHEKLIMA_PRODUCT", "Midea Portasplit"),
+
+		FlareSolverrURL:     envStr("FLARESOLVERR_URL", ""),
+		FlareSolverrTimeout: envDuration("FLARESOLVERR_TIMEOUT", 60*time.Second),
 
 		ObiEnabled:    envBool("OBI_ENABLED", true),
 		ObiProductID:  envStr("OBI_PRODUCT_ID", "8620890"),

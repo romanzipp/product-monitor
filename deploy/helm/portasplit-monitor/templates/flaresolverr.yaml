@@ -1,0 +1,80 @@
+{{- if .Values.flaresolverr.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "portasplit-monitor.fullname" . }}-flaresolverr
+  labels:
+    {{- include "portasplit-monitor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flaresolverr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "portasplit-monitor.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: flaresolverr
+  template:
+    metadata:
+      labels:
+        {{- include "portasplit-monitor.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: flaresolverr
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: flaresolverr
+          image: "{{ .Values.flaresolverr.image.repository }}:{{ .Values.flaresolverr.image.tag }}"
+          imagePullPolicy: {{ .Values.flaresolverr.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.flaresolverr.port }}
+          env:
+            - name: PORT
+              value: {{ .Values.flaresolverr.port | quote }}
+            {{- range $k, $v := .Values.flaresolverr.env }}
+            - name: {{ $k }}
+              value: {{ $v | quote }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 15
+            timeoutSeconds: 5
+          resources:
+            {{- toYaml .Values.flaresolverr.resources | nindent 12 }}
+          volumeMounts:
+            # Chrome needs a writable shared-memory mount or it crashes under load.
+            - name: dshm
+              mountPath: /dev/shm
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "portasplit-monitor.fullname" . }}-flaresolverr
+  labels:
+    {{- include "portasplit-monitor.labels" . | nindent 4 }}
+    app.kubernetes.io/component: flaresolverr
+spec:
+  selector:
+    {{- include "portasplit-monitor.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: flaresolverr
+  ports:
+    - name: http
+      port: {{ .Values.flaresolverr.port }}
+      targetPort: http
+{{- end }}

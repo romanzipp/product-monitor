@@ -25,8 +25,12 @@ notification. Offers above `PRICE_MAX` are ignored.
 | `obi` | `https://www.obi.de/api/pdp/v1/availability/<id>` (single product) |
 
 > Note: `braucheklima.de` sits behind Cloudflare and blocks datacenter IPs
-> (403). Run it from a residential network (e.g. the homelab cluster), not a
-> cloud VPS. `obi` works from anywhere.
+> (403). Either run it from a residential network (e.g. the homelab cluster),
+> or set `FLARESOLVERR_URL` to route the feed through a
+> [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) proxy that solves
+> the Cloudflare challenge with a real browser. The Helm chart deploys
+> FlareSolverr and wires `FLARESOLVERR_URL` automatically (toggle via
+> `flaresolverr.enabled`). `obi` works from anywhere.
 
 Sources implement the `model.Source` interface, so adding another retailer is
 localised to one file — see **Adding a source** below.

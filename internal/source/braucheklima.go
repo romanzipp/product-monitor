@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -14,39 +15,33 @@ import (
 // BraucheKlimaSource reads the aggregated availability feed published by
 // braucheklima.de. The feed is a JSON array of stores, each carrying an
 // `articles` map keyed by product name with time-series `stocks`/`prices`.
+//
+// braucheklima.de sits behind Cloudflare and 403s datacenter IPs. When a
+// FlareSolverr proxy is configured the feed is fetched through it; otherwise a
+// plain HTTP GET is used (works from residential networks).
 type BraucheKlimaSource struct {
 	client  *http.Client
+	fs      *FlareSolverr // optional; if set, requests route through FlareSolverr
 	url     string
 	product string // exact key to look up in the `articles` map
 }
 
-// NewBraucheKlima constructs a source for the given product key.
-func NewBraucheKlima(client *http.Client, url, product string) *BraucheKlimaSource {
-	return &BraucheKlimaSource{client: client, url: url, product: product}
+// NewBraucheKlima constructs a source for the given product key. fs may be nil
+// to fetch the feed directly without a FlareSolverr proxy.
+func NewBraucheKlima(client *http.Client, fs *FlareSolverr, url, product string) *BraucheKlimaSource {
+	return &BraucheKlimaSource{client: client, fs: fs, url: url, product: product}
 }
 
 func (s *BraucheKlimaSource) Name() string { return "braucheklima" }
 
 func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.url, nil)
+	body, err := s.fetch(ctx)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", userAgent)
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
-	}
 
 	var stores []bkStore
-	if err := json.NewDecoder(resp.Body).Decode(&stores); err != nil {
+	if err := json.Unmarshal(body, &stores); err != nil {
 		return nil, fmt.Errorf("decode: %w", err)
 	}
 
@@ -83,6 +78,31 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 		})
 	}
 	return out, nil
+}
+
+// fetch returns the raw feed body, routing through FlareSolverr when configured.
+func (s *BraucheKlimaSource) fetch(ctx context.Context) ([]byte, error) {
+	if s.fs != nil {
+		return s.fs.Get(ctx, s.url)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", userAgent)
+
+	resp, err := s.client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
+	}
+	return io.ReadAll(resp.Body)
 }
 
 // bkLocation builds a human-readable location string, defaulting to "Online"

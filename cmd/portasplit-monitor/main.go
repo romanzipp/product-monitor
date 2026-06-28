@@ -47,10 +47,16 @@ func main() {
 	notifier := notify.NewPushover(httpClient,
 		cfg.PushoverToken, cfg.PushoverUser, cfg.PushoverPriority, cfg.PushoverDevice)
 
+	var flareSolverr *source.FlareSolverr
+	if cfg.FlareSolverrURL != "" {
+		flareSolverr = source.NewFlareSolverr(cfg.FlareSolverrURL, cfg.FlareSolverrTimeout)
+		log.Info("flaresolverr enabled", "url", cfg.FlareSolverrURL)
+	}
+
 	var sources []model.Source
 	if cfg.BraucheKlimaEnabled {
 		sources = append(sources,
-			source.NewBraucheKlima(httpClient, cfg.BraucheKlimaURL, cfg.BraucheKlimaProduct))
+			source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProduct))
 	}
 	if cfg.ObiEnabled {
 		sources = append(sources,

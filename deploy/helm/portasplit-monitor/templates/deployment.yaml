@@ -35,6 +35,10 @@ spec:
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
+            {{- if .Values.flaresolverr.enabled }}
+            - name: FLARESOLVERR_URL
+              value: {{ printf "http://%s-flaresolverr:%v" (include "portasplit-monitor.fullname" .) .Values.flaresolverr.port | quote }}
+            {{- end }}
           {{- with .Values.envFromSecret.name }}
           envFrom:
             - secretRef:

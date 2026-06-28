@@ -28,6 +28,28 @@ env:
   OBI_PRODUCT_ID: "8620890"
   OBI_POSTAL_CODE: "36043"
 
+# FlareSolverr proxy for Cloudflare-protected sources (braucheklima). When
+# enabled, a FlareSolverr Deployment + Service is created and FLARESOLVERR_URL
+# is injected into the app automatically, so it can run from datacenter IPs that
+# Cloudflare would otherwise 403.
+flaresolverr:
+  enabled: true
+  image:
+    repository: ghcr.io/flaresolverr/flaresolverr
+    tag: v3.3.21
+    pullPolicy: IfNotPresent
+  port: 8191
+  env:
+    LOG_LEVEL: info
+    TZ: Europe/Berlin
+  # Headless Chrome is memory-hungry; give it room or it OOMs mid-challenge.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
 # Reference to an existing Secret whose keys are injected as env vars. Holds
 # the Pushover credentials (PUSHOVER_TOKEN, PUSHOVER_USER). Cluster-specific.
 # Example:
