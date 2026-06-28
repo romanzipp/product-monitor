@@ -14,8 +14,7 @@ func newPageServer(t *testing.T, html string) *httptest.Server {
 	}))
 }
 
-// The MediaMarkt product id 142245268 is embedded in the default URL and used as
-// the product-token guard, so test pages must include it to be "the right page".
+// mmToken is the product id used by the token guard; test pages must include it.
 const mmToken = "142245268"
 
 func TestMediaMarktAvailability(t *testing.T) {
@@ -28,8 +27,7 @@ func TestMediaMarktAvailability(t *testing.T) {
 		{"out of stock", `<script>{"productId":"142245268","offers":{"availability":"https://schema.org/OutOfStock"}}</script>`, false},
 		{"out wins over in", `142245268 schema.org/InStock schema.org/OutOfStock`, false},
 		{"no markers", `<div>142245268 but nothing structured</div>`, false},
-		// Regression: a soft-404 page lists OTHER in-stock products (schema.org/InStock
-		// present) but not this product's id. Must NOT report available.
+		// Regression: soft-404 with other products' schema.org/InStock but no token.
 		{"soft 404 without product token", `<div>Seite nicht gefunden</div> schema.org/InStock schema.org/InStock`, false},
 	}
 
@@ -38,7 +36,6 @@ func TestMediaMarktAvailability(t *testing.T) {
 			srv := newPageServer(t, tc.html)
 			defer srv.Close()
 
-			// URL carries the product token so productToken() picks it up.
 			src := NewMediaMarkt(srv.Client(), nil, srv.URL+"/p_"+mmToken+".html")
 			got, err := src.Check(context.Background())
 			if err != nil {

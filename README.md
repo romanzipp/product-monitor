@@ -34,22 +34,6 @@ results are filtered to nearby stores via `LOCAL_PLZ_PREFIXES` (default `36`, th
 Fulda region) — a store is kept only if its postal code starts with one of the
 listed prefixes. Online results are never filtered.
 
-> Note: Amazon and Globus Baumarkt (including the Fulda store) are already in the
-> `braucheklima` aggregated feed, so they need no dedicated source. `mediamarkt`
-> and `euronics` are not in that feed and are checked directly by looking for an
-> in-stock marker in the product page HTML; this is more brittle than a JSON feed
-> and may need marker tuning if a retailer changes its markup. Both effectively
-> require `FLARESOLVERR_URL` (their pages are anti-bot protected) and currently
-> report online availability only, not per-market in-store stock.
-
-> Note: `braucheklima.de` sits behind Cloudflare and blocks datacenter IPs
-> (403). Either run it from a residential network (e.g. the homelab cluster),
-> or set `FLARESOLVERR_URL` to route the feed through a
-> [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) proxy that solves
-> the Cloudflare challenge with a real browser. The Helm chart deploys
-> FlareSolverr and wires `FLARESOLVERR_URL` automatically (toggle via
-> `flaresolverr.enabled`). `obi` works from anywhere.
-
 Sources implement the `model.Source` interface, so adding another retailer is
 localised to one file — see **Adding a source** below.
 
@@ -70,13 +54,6 @@ make run
 
 ## Run with Docker Compose
 
-`docker-compose.yml` runs the monitor alongside a
-[FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) container, mirroring
-the Helm chart. The monitor reaches FlareSolverr over the compose network
-(`FLARESOLVERR_URL=http://flaresolverr:8191`, set in the compose file), so the
-braucheklima feed works even from a datacenter IP. The SQLite database persists
-in the named `monitor-data` volume.
-
 ```bash
 cp .env.example .env   # then edit PUSHOVER_TOKEN / PUSHOVER_USER
 docker compose up -d --build
@@ -91,10 +68,6 @@ docker compose logs -f          # tail logs
 docker compose up -d --build    # redeploy after changes
 docker compose down             # stop (add -v to also drop the DB volume)
 ```
-
-To fetch braucheklima directly without FlareSolverr (residential IP only), drop
-the `FLARESOLVERR_URL` line from the `monitor` service and remove the
-`flaresolverr` service.
 
 ## Deploy to a host (Docker Compose)
 

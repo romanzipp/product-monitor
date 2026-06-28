@@ -9,16 +9,13 @@ import (
 // mediaMarktDefaultURL is the PortaSplit product page (grey, 42 m² variant).
 const mediaMarktDefaultURL = "https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html"
 
-// MediaMarktSource checks the MediaMarkt product page for availability.
-// MediaMarkt exposes no public stock API and protects its pages with anti-bot,
-// so this is a JSON-LD schema.org availability check that needs FlareSolverr in
-// practice. It reports online availability only (not per-market in-store stock).
+// MediaMarktSource checks the MediaMarkt product page (online availability only;
+// needs FlareSolverr in practice).
 type MediaMarktSource struct {
 	webCheck
 }
 
-// NewMediaMarkt builds a MediaMarkt source. An empty url falls back to the
-// default PortaSplit product page.
+// NewMediaMarkt builds a MediaMarkt source; an empty url uses the default page.
 func NewMediaMarkt(client *http.Client, fs *FlareSolverr, url string) *MediaMarktSource {
 	if url == "" {
 		url = mediaMarktDefaultURL

@@ -11,22 +11,17 @@ import (
 	"portasplit-monitor/internal/model"
 )
 
-// BraucheKlimaSource reads the aggregated availability feed published by
-// braucheklima.de. The feed is a JSON array of stores, each carrying an
-// `articles` map keyed by product name with time-series `stocks`/`prices`.
-//
-// braucheklima.de sits behind Cloudflare and 403s datacenter IPs. When a
-// FlareSolverr proxy is configured the feed is fetched through it; otherwise a
-// plain HTTP GET is used (works from residential networks).
+// BraucheKlimaSource reads the aggregated availability feed from braucheklima.de,
+// a JSON array of stores each carrying an `articles` map keyed by product name.
+// The feed sits behind Cloudflare and 403s datacenter IPs, so fs is used there.
 type BraucheKlimaSource struct {
 	client  *http.Client
-	fs      *FlareSolverr // optional; if set, requests route through FlareSolverr
+	fs      *FlareSolverr // optional
 	url     string
-	product string // exact key to look up in the `articles` map
+	product string // key in the `articles` map
 }
 
-// NewBraucheKlima constructs a source for the given product key. fs may be nil
-// to fetch the feed directly without a FlareSolverr proxy.
+// NewBraucheKlima constructs a source for the given product key. fs may be nil.
 func NewBraucheKlima(client *http.Client, fs *FlareSolverr, url, product string) *BraucheKlimaSource {
 	return &BraucheKlimaSource{client: client, fs: fs, url: url, product: product}
 }
@@ -53,7 +48,7 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 		if len(art.Stocks) == 0 {
 			continue
 		}
-		// The stocks array is sorted newest-first; index 0 is the current state.
+		// Stocks are newest-first; index 0 is the current state.
 		stock := art.Stocks[0].Stock
 		if stock <= 0 {
 			continue
@@ -65,8 +60,7 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 			price = &p
 		}
 
-		// Online sellers (Amazon, "<retailer> Online") carry no physical
-		// address; everything with a postal code is a brick-and-mortar store.
+		// A postal code marks a physical store; online sellers have none.
 		channel := model.ChannelOnline
 		plz := ""
 		if st.PLZ != nil && *st.PLZ != "" {
@@ -90,14 +84,12 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 	return out, nil
 }
 
-// fetch returns the raw feed body, routing through FlareSolverr when configured.
 func (s *BraucheKlimaSource) fetch(ctx context.Context) ([]byte, error) {
 	headers := map[string]string{"Accept": "application/json", "User-Agent": userAgent}
 	return getBody(ctx, s.client, s.fs, s.url, headers)
 }
 
-// bkLocation builds a human-readable location string, defaulting to "Online"
-// for stores without a physical address (e.g. Amazon).
+// bkLocation builds a location string, defaulting to "Online" without an address.
 func bkLocation(s bkStore) string {
 	var parts []string
 	if s.Street != nil && *s.Street != "" {
@@ -119,8 +111,6 @@ func coalesceStr(s *string) string {
 	}
 	return *s
 }
-
-// --- response types ---
 
 type bkStore struct {
 	Name     string               `json:"name"`

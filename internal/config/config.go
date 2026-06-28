@@ -19,9 +19,7 @@ type Config struct {
 	HTTPTimeout   time.Duration
 	DBPath        string
 	Debug         bool
-	// PriceMax caps the accepted offer price in whole euros. 0 = no limit.
-	// Offers with a known price above this are ignored.
-	PriceMax int
+	PriceMax      int // whole euros; 0 = no limit
 
 	PushoverToken    string
 	PushoverUser     string
@@ -32,8 +30,8 @@ type Config struct {
 	BraucheKlimaURL     string
 	BraucheKlimaProduct string
 
-	// FlareSolverrURL, when set, routes Cloudflare-protected sources
-	// (braucheklima) through a FlareSolverr proxy. Empty disables it.
+	// FlareSolverrURL, when set, routes Cloudflare-protected sources through a
+	// FlareSolverr proxy. Empty disables it.
 	FlareSolverrURL     string
 	FlareSolverrTimeout time.Duration
 
@@ -46,23 +44,19 @@ type Config struct {
 	EuronicsEnabled bool
 	EuronicsURL     string
 
-	// HomePLZ is the reference postal code for this deployment. It is the single
-	// source of location truth: location-aware sources (OBI) query against it,
-	// and the in-store filter prefixes default to its leading digits.
+	// HomePLZ is the single location reference: OBI queries against it and the
+	// in-store filter prefixes default to its leading digits.
 	HomePLZ string
 
-	// LocalPLZPrefixes filters in-store availability to nearby stores: an
-	// in-store result is kept only if its postal code starts with one of these
-	// prefixes. Empty means no filter. Online results are never filtered.
-	// Defaults to the region of HomePLZ (its first two digits).
+	// LocalPLZPrefixes keeps an in-store result only if its postal code starts
+	// with one of these prefixes. Empty disables the filter; online is unaffected.
 	LocalPLZPrefixes []string
 }
 
-// Load reads configuration from a local .env file (if present) and the
-// environment, applies defaults, and validates required fields.
+// Load reads a local .env file (if present) and the environment, applies
+// defaults, and validates required fields.
 func Load() (*Config, error) {
-	// Ignore the error: a missing .env in production is perfectly fine when
-	// all values are provided via real environment variables.
+	// A missing .env is fine when values come from real environment variables.
 	_ = godotenv.Load()
 
 	homePLZ := envStr("LOCAL_PLZ", "36037")
@@ -149,8 +143,7 @@ func envInt(key string, def int) int {
 	return n
 }
 
-// plzRegion returns the default in-store filter prefix for a postal code: its
-// first two digits, which group a German postal region (e.g. "36037" -> "36").
+// plzRegion returns a postal code's first two digits, e.g. "36037" -> "36".
 func plzRegion(plz string) []string {
 	if len(plz) >= 2 {
 		return []string{plz[:2]}

@@ -44,8 +44,7 @@ func main() {
 
 	httpClient := &http.Client{Timeout: cfg.HTTPTimeout}
 
-	notifier := notify.NewPushover(httpClient,
-		cfg.PushoverToken, cfg.PushoverUser, cfg.PushoverPriority, cfg.PushoverDevice)
+	notifier := notify.NewPushover(httpClient, cfg.PushoverToken, cfg.PushoverUser, cfg.PushoverPriority, cfg.PushoverDevice)
 
 	var flareSolverr *source.FlareSolverr
 	if cfg.FlareSolverrURL != "" {
@@ -55,12 +54,10 @@ func main() {
 
 	var sources []model.Source
 	if cfg.BraucheKlimaEnabled {
-		sources = append(sources,
-			source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProduct))
+		sources = append(sources, source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProduct))
 	}
 	if cfg.ObiEnabled {
-		sources = append(sources,
-			source.NewObi(httpClient, cfg.ObiProductID, cfg.HomePLZ))
+		sources = append(sources, source.NewObi(httpClient, cfg.ObiProductID, cfg.HomePLZ))
 	}
 	if cfg.MediaMarktEnabled {
 		sources = append(sources, source.NewMediaMarkt(httpClient, flareSolverr, cfg.MediaMarktURL))

@@ -17,16 +17,11 @@ func TestIsLocal(t *testing.T) {
 		a        model.Availability
 		want     bool
 	}{
-		{"online always passes", []string{"36"},
-			model.Availability{Channel: model.ChannelOnline}, true},
-		{"no prefixes keeps everything", nil,
-			model.Availability{Channel: model.ChannelInStore, PLZ: "13127"}, true},
-		{"local in-store passes", []string{"36"},
-			model.Availability{Channel: model.ChannelInStore, PLZ: "36100"}, true},
-		{"far in-store filtered", []string{"36"},
-			model.Availability{Channel: model.ChannelInStore, PLZ: "13127"}, false},
-		{"multiple prefixes", []string{"36", "97"},
-			model.Availability{Channel: model.ChannelInStore, PLZ: "97070"}, true},
+		{"online always passes", []string{"36"}, model.Availability{Channel: model.ChannelOnline}, true},
+		{"no prefixes keeps everything", nil, model.Availability{Channel: model.ChannelInStore, PLZ: "13127"}, true},
+		{"local in-store passes", []string{"36"}, model.Availability{Channel: model.ChannelInStore, PLZ: "36100"}, true},
+		{"far in-store filtered", []string{"36"}, model.Availability{Channel: model.ChannelInStore, PLZ: "13127"}, false},
+		{"multiple prefixes", []string{"36", "97"}, model.Availability{Channel: model.ChannelInStore, PLZ: "97070"}, true},
 	}
 
 	for _, tc := range cases {

@@ -22,9 +22,6 @@ type Monitor struct {
 	localPrefixes []string // in-store PLZ prefixes to keep; empty = keep all
 }
 
-// New constructs a Monitor. priceMax caps accepted offer prices in whole euros
-// (0 disables the limit). localPrefixes restricts in-store results to stores
-// whose postal code starts with one of the prefixes (empty = no restriction).
 func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, priceMax int, localPrefixes []string) *Monitor {
 	return &Monitor{
 		sources:       sources,
@@ -36,8 +33,7 @@ func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.L
 	}
 }
 
-// Run polls every interval until ctx is cancelled. The first poll runs
-// immediately on start.
+// Run polls every interval until ctx is cancelled, starting immediately.
 func (m *Monitor) Run(ctx context.Context, interval time.Duration) {
 	m.log.Info("monitor started", "interval", interval, "sources", sourceNames(m.sources))
 
@@ -56,8 +52,7 @@ func (m *Monitor) Run(ctx context.Context, interval time.Duration) {
 	}
 }
 
-// tick performs one full poll across all sources, reconciles the dedup store
-// and fires notifications for newly available items.
+// tick polls all sources, reconciles the store and notifies on new items.
 func (m *Monitor) tick(ctx context.Context) {
 	current := make([]model.Availability, 0, 16)
 	for _, src := range m.sources {
@@ -83,8 +78,7 @@ func (m *Monitor) tick(ctx context.Context) {
 		currentKeys[a.Key] = struct{}{}
 	}
 
-	// Drop records for items that are no longer available so a future restock
-	// produces a fresh notification.
+	// Drop records no longer available so a future restock re-notifies.
 	if existing, err := m.store.AllKeys(ctx); err != nil {
 		m.log.Error("loading tracked keys failed", "err", err)
 	} else {
@@ -125,14 +119,12 @@ func (m *Monitor) tick(ctx context.Context) {
 		if err := m.store.Record(ctx, a); err != nil {
 			m.log.Error("record failed", "key", a.Key, "err", err)
 		}
-		m.log.Info("notified", "source", a.Source, "store", a.StoreName,
-			"product", a.ProductName, "stock", a.Stock)
+		m.log.Info("notified", "source", a.Source, "store", a.StoreName, "product", a.ProductName, "stock", a.Stock)
 	}
 }
 
-// isLocal reports whether an availability passes the local-store filter.
-// Online results always pass; in-store results pass only when their postal code
-// matches one of the configured prefixes (or no prefixes are configured).
+// isLocal reports whether an availability passes the local-store filter. Online
+// always passes; in-store passes only when its PLZ matches a configured prefix.
 func (m *Monitor) isLocal(a model.Availability) bool {
 	if a.Channel != model.ChannelInStore || len(m.localPrefixes) == 0 {
 		return true
@@ -146,17 +138,13 @@ func (m *Monitor) isLocal(a model.Availability) bool {
 	return false
 }
 
-// withinBudget reports whether an offer should be considered. Offers with an
-// unknown price are always kept; a priceMax <= 0 disables the filter.
+// withinBudget keeps offers with unknown price; priceMax <= 0 disables the filter.
 func (m *Monitor) withinBudget(a model.Availability) bool {
 	if m.priceMax <= 0 || a.Price == nil {
 		return true
 	}
 	if *a.Price > float64(m.priceMax) {
-		if m.log.Enabled(nil, slog.LevelDebug) {
-			m.log.Debug("skipping over budget",
-				"key", a.Key, "price", *a.Price, "max", m.priceMax)
-		}
+		m.log.Debug("skipping over budget", "key", a.Key, "price", *a.Price, "max", m.priceMax)
 		return false
 	}
 	return true

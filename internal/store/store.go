@@ -1,9 +1,6 @@
-// Package store implements the SQLite-backed dedup store.
-//
-// The store keeps one row per active availability "episode". When an item
-// appears for the first time we notify and insert a row. While it remains in
-// stock we simply refresh last_checked_at. When it goes out of stock the row
-// is removed, so a future restock triggers a fresh notification.
+// Package store implements the SQLite-backed dedup store: one row per active
+// availability. A row is inserted on first notify, refreshed while in stock, and
+// removed when out of stock so a future restock notifies again.
 package store
 
 import (
@@ -17,7 +14,6 @@ import (
 	"portasplit-monitor/internal/model"
 )
 
-// Store wraps a SQLite database used to remember notified availabilities.
 type Store struct {
 	db *sql.DB
 }
@@ -70,10 +66,8 @@ CREATE INDEX IF NOT EXISTS idx_notifications_source ON notifications(source);`
 	return nil
 }
 
-// Close releases the database connection.
 func (s *Store) Close() error { return s.db.Close() }
 
-// Record inserts a newly-notified availability.
 func (s *Store) Record(ctx context.Context, a model.Availability) error {
 	now := time.Now().Unix()
 	var price any
@@ -91,11 +85,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 	return nil
 }
 
-// Exists reports whether a given key has already been notified.
 func (s *Store) Exists(ctx context.Context, key string) (bool, error) {
 	var one int
-	err := s.db.QueryRowContext(ctx,
-		`SELECT 1 FROM notifications WHERE key = ? LIMIT 1`, key).Scan(&one)
+	err := s.db.QueryRowContext(ctx, `SELECT 1 FROM notifications WHERE key = ? LIMIT 1`, key).Scan(&one)
 	if err == sql.ErrNoRows {
 		return false, nil
 	}
@@ -105,7 +97,7 @@ func (s *Store) Exists(ctx context.Context, key string) (bool, error) {
 	return true, nil
 }
 
-// Touch refreshes last_checked_at (and the latest stock/price) for a key.
+// Touch refreshes last_checked_at and the latest stock/price for a key.
 func (s *Store) Touch(ctx context.Context, a model.Availability) error {
 	now := time.Now().Unix()
 	var price any
@@ -122,7 +114,6 @@ UPDATE notifications
 	return nil
 }
 
-// AllKeys returns every key currently tracked in the store.
 func (s *Store) AllKeys(ctx context.Context) ([]string, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT key FROM notifications`)
 	if err != nil {
@@ -140,7 +131,6 @@ func (s *Store) AllKeys(ctx context.Context) ([]string, error) {
 	return keys, rows.Err()
 }
 
-// Delete removes a key from the store.
 func (s *Store) Delete(ctx context.Context, key string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM notifications WHERE key = ?`, key)
 	if err != nil {

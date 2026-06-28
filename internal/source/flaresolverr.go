@@ -12,19 +12,16 @@ import (
 	"time"
 )
 
-// FlareSolverr is a thin client for a FlareSolverr proxy
-// (https://github.com/FlareSolverr/FlareSolverr). FlareSolverr drives a real
-// browser to solve Cloudflare challenges, which lets sources behind Cloudflare
-// (e.g. braucheklima.de, which 403s datacenter IPs) be fetched from a cluster.
+// FlareSolverr is a client for a FlareSolverr proxy, which drives a real browser
+// to solve Cloudflare challenges for sources that 403 datacenter IPs.
 type FlareSolverr struct {
 	client     *http.Client
-	endpoint   string        // base URL, e.g. http://flaresolverr:8191
-	maxTimeout time.Duration // how long FlareSolverr may spend solving a challenge
+	endpoint   string // base URL, without the /v1 path
+	maxTimeout time.Duration
 }
 
-// NewFlareSolverr builds a client for the FlareSolverr instance at endpoint
-// (base URL without the /v1 path). It uses its own HTTP client whose timeout is
-// always longer than maxTimeout, so the solver's internal deadline fires first.
+// NewFlareSolverr builds a client for the FlareSolverr at endpoint. Its HTTP
+// timeout stays longer than maxTimeout so the solver's deadline fires first.
 func NewFlareSolverr(endpoint string, maxTimeout time.Duration) *FlareSolverr {
 	return &FlareSolverr{
 		client:     &http.Client{Timeout: maxTimeout + 15*time.Second},
@@ -33,9 +30,7 @@ func NewFlareSolverr(endpoint string, maxTimeout time.Duration) *FlareSolverr {
 	}
 }
 
-// Get fetches target through FlareSolverr and returns the response body. For a
-// JSON endpoint the browser renders the payload inside a <pre> element, so the
-// JSON is extracted from the returned HTML (see extractBody).
+// Get fetches target through FlareSolverr and returns the response body.
 func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
 	payload, err := json.Marshal(fsRequest{
 		Cmd:        "request.get",
@@ -58,8 +53,8 @@ func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	// FlareSolverr reports solve failures as HTTP 500 with the real reason in the
-	// JSON body's "message" field, so decode the body regardless of status code.
+	// Solve failures come back as HTTP 500 with the reason in the body, so decode
+	// regardless of status code.
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("flaresolverr read: %w", err)
@@ -83,10 +78,9 @@ func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
 	return extractBody(fr.Solution.Response), nil
 }
 
-// extractBody pulls the actual payload out of FlareSolverr's rendered HTML. A
-// raw JSON body is returned as-is; a body rendered by the browser's JSON viewer
-// is wrapped in <pre>...</pre> with HTML-escaped content, which is unwrapped and
-// unescaped here.
+// extractBody pulls the payload out of FlareSolverr's rendered HTML. Raw JSON is
+// returned as-is; a JSON body rendered by the browser is wrapped in <pre> with
+// HTML-escaped content, which is unwrapped and unescaped here.
 func extractBody(s string) []byte {
 	trimmed := strings.TrimSpace(s)
 	if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
@@ -104,8 +98,6 @@ func extractBody(s string) []byte {
 	}
 	return []byte(trimmed)
 }
-
-// --- FlareSolverr API types ---
 
 type fsRequest struct {
 	Cmd        string `json:"cmd"`

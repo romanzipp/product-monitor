@@ -10,20 +10,16 @@ import (
 	"portasplit-monitor/internal/model"
 )
 
-// ObiSource queries the OBI product availability API.
-//
-// The API returns two arrays: `deliveryDataPerSeller` (online delivery) and
-// `pickupStores` (click & collect). When the product is out of stock both are
-// empty. The exact shape of populated entries varies, so entries are decoded
-// into generic maps and fields are read defensively by trying common names.
+// ObiSource queries the OBI product availability API, which returns two arrays:
+// `deliveryDataPerSeller` (online) and `pickupStores` (in-store). Entry shapes
+// vary, so they are decoded into generic maps and read defensively.
 type ObiSource struct {
 	client     *http.Client
-	baseURL    string // availability API base, without the product id
+	baseURL    string // without the product id
 	productID  string
 	postalCode string
 }
 
-// NewObi constructs an OBI source for the given product id and postal code.
 func NewObi(client *http.Client, productID, postalCode string) *ObiSource {
 	return &ObiSource{
 		client:     client,
@@ -36,8 +32,7 @@ func NewObi(client *http.Client, productID, postalCode string) *ObiSource {
 func (s *ObiSource) Name() string { return "obi" }
 
 func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
-	endpoint := fmt.Sprintf("%s/%s?postalCode=%s&quantity=1&lang=de-DE",
-		s.baseURL, s.productID, s.postalCode)
+	endpoint := fmt.Sprintf("%s/%s?postalCode=%s&quantity=1&lang=de-DE", s.baseURL, s.productID, s.postalCode)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -45,7 +40,6 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("User-Agent", browserUserAgent)
-	// OBI serves its API best with a browser-ish Accept-Language.
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9")
 
 	resp, err := s.client.Do(req)
@@ -72,7 +66,7 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 		name := pickStr(st, "name", "storeName", "title", "city")
 		qty := pickInt(st, "stock", "quantity", "availableStockQuantity", "availableQuantity")
 		if qty < 1 {
-			qty = 1 // present in the list implies available; fall back to 1
+			qty = 1 // listed implies available
 		}
 		storePLZ := firstNonEmpty(pickStr(st, "postalCode", "zipCode", "plz"), s.postalCode)
 		out = append(out, model.Availability{

@@ -51,8 +51,7 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 		form.Set("device", p.device)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pushoverEndpoint,
-		strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, pushoverEndpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return err
 	}
@@ -70,7 +69,6 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 	return nil
 }
 
-// channelLabel renders the availability channel for display.
 func channelLabel(c model.Channel) string {
 	if c == model.ChannelInStore {
 		return "In store"
