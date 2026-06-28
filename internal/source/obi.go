@@ -74,6 +74,7 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 		if qty < 1 {
 			qty = 1 // present in the list implies available; fall back to 1
 		}
+		storePLZ := firstNonEmpty(pickStr(st, "postalCode", "zipCode", "plz"), s.postalCode)
 		out = append(out, model.Availability{
 			Source:      s.Name(),
 			StoreName:   firstNonEmpty(name, "OBI Filiale"),
@@ -81,6 +82,8 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 			Stock:       qty,
 			URL:         productURL,
 			Location:    firstNonEmpty(pickStr(st, "city", "address", "street"), s.postalCode),
+			Channel:     model.ChannelInStore,
+			PLZ:         storePLZ,
 			Key:         "obi:" + s.productID + ":pickup:" + id,
 		})
 	}
@@ -98,6 +101,7 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 			Stock:       qty,
 			URL:         productURL,
 			Location:    "Online · PLZ " + s.postalCode,
+			Channel:     model.ChannelOnline,
 			Key:         "obi:" + s.productID + ":delivery:" + id,
 		})
 	}

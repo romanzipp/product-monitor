@@ -3,6 +3,15 @@ package model
 
 import "context"
 
+// Channel distinguishes how an item is available: shipped online vs. physically
+// stocked in a local store for pickup.
+type Channel string
+
+const (
+	ChannelOnline  Channel = "online"  // available for online order/delivery
+	ChannelInStore Channel = "instore" // available in a physical store
+)
+
 // Availability describes a single in-stock observation for a product.
 // It is produced by a Source and consumed by the monitor and notifier.
 type Availability struct {
@@ -13,6 +22,8 @@ type Availability struct {
 	Price       *float64 // optional price in EUR
 	URL         string   // direct link to the product, if known
 	Location    string   // human-readable location (city/address/Online)
+	Channel     Channel  // online vs in-store
+	PLZ         string   // postal code for in-store items (empty for online)
 	Key         string   // stable, unique dedup key (source + location + product)
 }
 

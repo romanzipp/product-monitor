@@ -4,6 +4,7 @@ package monitor
 import (
 	"context"
 	"log/slog"
+	"strings"
 	"time"
 
 	"portasplit-monitor/internal/model"
@@ -13,17 +14,27 @@ import (
 
 // Monitor periodically polls all sources and notifies on new availability.
 type Monitor struct {
-	sources  []model.Source
-	store    *store.Store
-	notifier notify.Notifier
-	log      *slog.Logger
-	priceMax int // 0 = unlimited
+	sources       []model.Source
+	store         *store.Store
+	notifier      notify.Notifier
+	log           *slog.Logger
+	priceMax      int      // 0 = unlimited
+	localPrefixes []string // in-store PLZ prefixes to keep; empty = keep all
 }
 
 // New constructs a Monitor. priceMax caps accepted offer prices in whole euros
-// (0 disables the limit).
-func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, priceMax int) *Monitor {
-	return &Monitor{sources: sources, store: st, notifier: n, log: log, priceMax: priceMax}
+// (0 disables the limit). localPrefixes restricts in-store results to stores
+// whose postal code starts with one of the prefixes (empty = no restriction).
+func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger,
+	priceMax int, localPrefixes []string) *Monitor {
+	return &Monitor{
+		sources:       sources,
+		store:         st,
+		notifier:      n,
+		log:           log,
+		priceMax:      priceMax,
+		localPrefixes: localPrefixes,
+	}
 }
 
 // Run polls every interval until ctx is cancelled. The first poll runs
@@ -59,6 +70,9 @@ func (m *Monitor) tick(ctx context.Context) {
 		m.log.Debug("source checked", "source", src.Name(), "available", len(avail))
 		for _, a := range avail {
 			if !m.withinBudget(a) {
+				continue
+			}
+			if !m.isLocal(a) {
 				continue
 			}
 			current = append(current, a)
@@ -115,6 +129,23 @@ func (m *Monitor) tick(ctx context.Context) {
 		m.log.Info("notified", "source", a.Source, "store", a.StoreName,
 			"product", a.ProductName, "stock", a.Stock)
 	}
+}
+
+// isLocal reports whether an availability passes the local-store filter.
+// Online results always pass; in-store results pass only when their postal code
+// matches one of the configured prefixes (or no prefixes are configured).
+func (m *Monitor) isLocal(a model.Availability) bool {
+	if a.Channel != model.ChannelInStore || len(m.localPrefixes) == 0 {
+		return true
+	}
+	for _, p := range m.localPrefixes {
+		if strings.HasPrefix(a.PLZ, p) {
+			return true
+		}
+	}
+	m.log.Debug("skipping non-local in-store result",
+		"store", a.StoreName, "plz", a.PLZ, "prefixes", m.localPrefixes)
+	return false
 }
 
 // withinBudget reports whether an offer should be considered. Offers with an

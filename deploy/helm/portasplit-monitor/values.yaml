@@ -26,7 +26,14 @@ env:
   BRAUCHEKLIMA_PRODUCT: "Midea Portasplit"
   OBI_ENABLED: "true"
   OBI_PRODUCT_ID: "8620890"
-  OBI_POSTAL_CODE: "36043"
+  MEDIAMARKT_ENABLED: "true"
+  EURONICS_ENABLED: "true"
+  # Home postal code: the single location reference. OBI queries against it and
+  # the in-store filter prefix defaults to its region (first two digits).
+  LOCAL_PLZ: "36037"
+  # In-store results are kept only for stores whose PLZ starts with one of these
+  # comma-separated prefixes. Defaults to the LOCAL_PLZ region. Online unfiltered.
+  LOCAL_PLZ_PREFIXES: "36"
 
 # FlareSolverr proxy for Cloudflare-protected sources (braucheklima). When
 # enabled, a FlareSolverr Deployment + Service is created and FLARESOLVERR_URL

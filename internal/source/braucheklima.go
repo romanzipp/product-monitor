@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -66,6 +65,15 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 			price = &p
 		}
 
+		// Online sellers (Amazon, "<retailer> Online") carry no physical
+		// address; everything with a postal code is a brick-and-mortar store.
+		channel := model.ChannelOnline
+		plz := ""
+		if st.PLZ != nil && *st.PLZ != "" {
+			channel = model.ChannelInStore
+			plz = *st.PLZ
+		}
+
 		out = append(out, model.Availability{
 			Source:      s.Name(),
 			StoreName:   st.Name,
@@ -74,6 +82,8 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 			Price:       price,
 			URL:         art.URL,
 			Location:    bkLocation(st),
+			Channel:     channel,
+			PLZ:         plz,
 			Key:         "braucheklima:" + strconv.Itoa(art.StoresArticlesID),
 		})
 	}
@@ -82,27 +92,10 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 
 // fetch returns the raw feed body, routing through FlareSolverr when configured.
 func (s *BraucheKlimaSource) fetch(ctx context.Context) ([]byte, error) {
-	if s.fs != nil {
-		return s.fs.Get(ctx, s.url)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, s.url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("User-Agent", userAgent)
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status %d", resp.StatusCode)
-	}
-	return io.ReadAll(resp.Body)
+	return getBody(ctx, s.client, s.fs, s.url, map[string]string{
+		"Accept":     "application/json",
+		"User-Agent": userAgent,
+	})
 }
 
 // bkLocation builds a human-readable location string, defaulting to "Online"
