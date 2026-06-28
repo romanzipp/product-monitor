@@ -85,16 +85,22 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 	return nil
 }
 
-func (s *Store) Exists(ctx context.Context, key string) (bool, error) {
-	var one int
-	err := s.db.QueryRowContext(ctx, `SELECT 1 FROM notifications WHERE key = ? LIMIT 1`, key).Scan(&one)
+// Lookup returns the last stored price for a key and whether the key exists.
+// The price is nil when the key is unknown or was recorded without a price.
+func (s *Store) Lookup(ctx context.Context, key string) (*float64, bool, error) {
+	var price sql.NullFloat64
+	err := s.db.QueryRowContext(ctx, `SELECT price FROM notifications WHERE key = ?`, key).Scan(&price)
 	if err == sql.ErrNoRows {
-		return false, nil
+		return nil, false, nil
 	}
 	if err != nil {
-		return false, fmt.Errorf("exists: %w", err)
+		return nil, false, fmt.Errorf("lookup: %w", err)
 	}
-	return true, nil
+	if price.Valid {
+		p := price.Float64
+		return &p, true, nil
+	}
+	return nil, true, nil
 }
 
 // Touch refreshes last_checked_at and the latest stock/price for a key.

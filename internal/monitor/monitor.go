@@ -104,12 +104,22 @@ func (m *Monitor) tick(ctx context.Context) {
 	}
 
 	for _, a := range current {
-		known, err := m.store.Exists(ctx, a.Key)
+		prevPrice, known, err := m.store.Lookup(ctx, a.Key)
 		if err != nil {
-			m.log.Error("exists check failed", "key", a.Key, "err", err)
+			m.log.Error("lookup failed", "key", a.Key, "err", err)
 			continue
 		}
+
 		if known {
+			// Re-notify only when the price dropped below the last seen one.
+			if a.Price != nil && prevPrice != nil && *a.Price < *prevPrice {
+				if err := m.notifier.Notify(ctx, a); err != nil {
+					// Don't update the price: retry the drop on the next cycle.
+					m.log.Error("notify failed", "key", a.Key, "err", err)
+					continue
+				}
+				m.log.Info("price drop notified", "key", a.Key, "old", *prevPrice, "new", *a.Price)
+			}
 			if err := m.store.Touch(ctx, a); err != nil {
 				m.log.Error("touch failed", "key", a.Key, "err", err)
 			}
