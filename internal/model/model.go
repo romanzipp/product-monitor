@@ -22,6 +22,7 @@ type Availability struct {
 	Location    string
 	Channel     Channel
 	PLZ         string // empty for online
+	Targeted    bool   // source already targets a specific store; skip local filter
 	Key         string // stable dedup key
 }
 

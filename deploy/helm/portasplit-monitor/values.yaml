@@ -33,6 +33,10 @@ env:
   HAGEBAU_ENABLED: "true"
   HORNBACH_ENABLED: "true"
   TOOM_ENABLED: "true"
+  # Bauhaus store pickup availability (store 589 = Frankfurt) via purchasability API.
+  BAUHAUS_STORE_ENABLED: "true"
+  BAUHAUS_STORE_ID: "589"
+  BAUHAUS_STORE_NAME: "Bauhaus Frankfurt"
   # Home postal code: the single location reference. OBI queries against it and
   # the in-store filter prefix defaults to its region (first two digits).
   LOCAL_PLZ: "36037"

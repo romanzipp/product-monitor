@@ -61,6 +61,12 @@ type Config struct {
 	ToomEnabled bool
 	ToomURL     string
 
+	// BauhausStore checks one Bauhaus store's pickup availability via its
+	// purchasability API (needs FlareSolverr; cf_clearance is IP-bound).
+	BauhausStoreEnabled bool
+	BauhausStoreID      string
+	BauhausStoreName    string
+
 	// HomePLZ is the single location reference: OBI queries against it and the
 	// in-store filter prefixes default to its leading digits.
 	HomePLZ string
@@ -123,6 +129,10 @@ func Load() (*Config, error) {
 		ToomEnabled: envBool("TOOM_ENABLED", true),
 		ToomURL:     envStr("TOOM_URL", ""),
 
+		BauhausStoreEnabled: envBool("BAUHAUS_STORE_ENABLED", true),
+		BauhausStoreID:      envStr("BAUHAUS_STORE_ID", "589"),
+		BauhausStoreName:    envStr("BAUHAUS_STORE_NAME", "Bauhaus Frankfurt"),
+
 		HomePLZ:          homePLZ,
 		LocalPLZPrefixes: envCSV("LOCAL_PLZ_PREFIXES", plzRegion(homePLZ)),
 	}
@@ -137,7 +147,7 @@ func (c *Config) validate() error {
 	if c.PushoverToken == "" || c.PushoverUser == "" {
 		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER are required")
 	}
-	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled
+	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.BauhausStoreEnabled
 	if !anySource {
 		return fmt.Errorf("at least one source must be enabled (*_ENABLED)")
 	}

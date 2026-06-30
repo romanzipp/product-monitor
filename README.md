@@ -31,6 +31,7 @@ notification. Offers above `PRICE_MAX` are ignored.
 | `hagebau` | Hagebau product page (`HAGEBAU_URL`) | online |
 | `hornbach` | Hornbach product page (`HORNBACH_URL`) | online |
 | `toom` | toom product page (`TOOM_URL`) | online |
+| `bauhaus-store` | Bauhaus `/api/purchasability` for one store (`BAUHAUS_STORE_ID`, default Frankfurt) | in-store |
 
 Online retailers each have their own source (direct product-page check); the
 `braucheklima` feed now contributes physical-store stock only, so online stores
@@ -38,6 +39,14 @@ are not double-counted. Online product-page sources rely on `FlareSolverr`
 (several retailers are anti-bot protected or JS-rendered) and most use the
 `schema.org` JSON-LD availability; Amazon has no such marker, so its buybox
 add-to-cart button is used and it reports no price.
+
+`bauhaus-store` checks one Bauhaus store's pickup stock via the
+`/api/purchasability` endpoint. That endpoint is XHR-only behind Cloudflare, so a
+FlareSolverr session (clearance cookie + user agent) is harvested and the API is
+called directly. This requires the monitor and FlareSolverr to share an egress IP
+(the clearance cookie is IP-bound) — true for the Docker Compose / single-host
+setup. Its result is store-targeted, so it bypasses the `LOCAL_PLZ_PREFIXES`
+filter.
 
 ### Online vs in-store
 

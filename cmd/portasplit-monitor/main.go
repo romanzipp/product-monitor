@@ -79,6 +79,13 @@ func main() {
 	if cfg.ToomEnabled {
 		sources = append(sources, source.NewToom(httpClient, flareSolverr, cfg.ToomURL))
 	}
+	if cfg.BauhausStoreEnabled {
+		if flareSolverr == nil {
+			log.Warn("bauhaus-store source needs FLARESOLVERR_URL, skipping")
+		} else {
+			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreID, cfg.BauhausStoreName))
+		}
+	}
 
 	if len(sources) == 0 {
 		log.Error("no sources enabled, exiting")

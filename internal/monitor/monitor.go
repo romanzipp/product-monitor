@@ -141,7 +141,7 @@ func (m *Monitor) tick(ctx context.Context) {
 // isLocal reports whether an availability passes the local-store filter. Online
 // always passes; in-store passes only when its PLZ matches a configured prefix.
 func (m *Monitor) isLocal(a model.Availability) bool {
-	if a.Channel != model.ChannelInStore || len(m.localPrefixes) == 0 {
+	if a.Targeted || a.Channel != model.ChannelInStore || len(m.localPrefixes) == 0 {
 		return true
 	}
 	for _, p := range m.localPrefixes {

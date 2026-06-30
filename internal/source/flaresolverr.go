@@ -32,6 +32,41 @@ func NewFlareSolverr(endpoint string, maxTimeout time.Duration) *FlareSolverr {
 
 // Get fetches target through FlareSolverr and returns the response body.
 func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
+	fr, err := f.solve(ctx, target)
+	if err != nil {
+		return nil, err
+	}
+	if fr.Solution.Status == http.StatusNotFound || fr.Solution.Status == http.StatusGone {
+		return nil, errNotFound
+	}
+	if fr.Solution.Status != http.StatusOK {
+		return nil, fmt.Errorf("flaresolverr upstream status %d", fr.Solution.Status)
+	}
+	return extractBody(fr.Solution.Response), nil
+}
+
+// Session loads target through FlareSolverr and returns a Cookie header and the
+// browser user agent, for replaying authenticated API calls from the same host.
+func (f *FlareSolverr) Session(ctx context.Context, target string) (cookie, userAgent string, err error) {
+	fr, err := f.solve(ctx, target)
+	if err != nil {
+		return "", "", err
+	}
+	var b strings.Builder
+	for i, c := range fr.Solution.Cookies {
+		if i > 0 {
+			b.WriteString("; ")
+		}
+		b.WriteString(c.Name)
+		b.WriteByte('=')
+		b.WriteString(c.Value)
+	}
+	return b.String(), fr.Solution.UserAgent, nil
+}
+
+// solve posts a request.get to FlareSolverr and returns the parsed response once
+// the challenge is solved.
+func (f *FlareSolverr) solve(ctx context.Context, target string) (*fsResponse, error) {
 	payload, err := json.Marshal(fsRequest{
 		Cmd:        "request.get",
 		URL:        target,
@@ -71,14 +106,7 @@ func (f *FlareSolverr) Get(ctx context.Context, target string) ([]byte, error) {
 		}
 		return nil, fmt.Errorf("flaresolverr: %s", msg)
 	}
-	if fr.Solution.Status == http.StatusNotFound || fr.Solution.Status == http.StatusGone {
-		return nil, errNotFound
-	}
-	if fr.Solution.Status != http.StatusOK {
-		return nil, fmt.Errorf("flaresolverr upstream status %d", fr.Solution.Status)
-	}
-
-	return extractBody(fr.Solution.Response), nil
+	return &fr, nil
 }
 
 // extractBody pulls the payload out of FlareSolverr's rendered HTML. Raw JSON is
@@ -112,8 +140,13 @@ type fsResponse struct {
 	Status   string `json:"status"`
 	Message  string `json:"message"`
 	Solution struct {
-		URL      string `json:"url"`
-		Status   int    `json:"status"`
-		Response string `json:"response"`
+		URL       string `json:"url"`
+		Status    int    `json:"status"`
+		Response  string `json:"response"`
+		UserAgent string `json:"userAgent"`
+		Cookies   []struct {
+			Name  string `json:"name"`
+			Value string `json:"value"`
+		} `json:"cookies"`
 	} `json:"solution"`
 }
