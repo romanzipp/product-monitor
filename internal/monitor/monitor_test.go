@@ -26,7 +26,7 @@ func TestIsLocal(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			m := New(nil, nil, nil, log, 0, tc.prefixes)
+			m := New(nil, nil, nil, log, 0, tc.prefixes, nil)
 			if got := m.isLocal(tc.a); got != tc.want {
 				t.Errorf("isLocal=%v, want %v", got, tc.want)
 			}

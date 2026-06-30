@@ -12,6 +12,12 @@ import (
 	"portasplit-monitor/internal/store"
 )
 
+// Recorder receives per-source observations for metrics. May be nil.
+type Recorder interface {
+	ObserveCheck(source string, ok bool, available, stock int, minPrice *float64)
+	ObserveNotification(source string)
+}
+
 // Monitor periodically polls all sources and notifies on new availability.
 type Monitor struct {
 	sources       []model.Source
@@ -20,9 +26,10 @@ type Monitor struct {
 	log           *slog.Logger
 	priceMax      int      // 0 = unlimited
 	localPrefixes []string // in-store PLZ prefixes to keep; empty = keep all
+	metrics       Recorder
 }
 
-func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, priceMax int, localPrefixes []string) *Monitor {
+func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, priceMax int, localPrefixes []string, metrics Recorder) *Monitor {
 	return &Monitor{
 		sources:       sources,
 		store:         st,
@@ -30,6 +37,7 @@ func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.L
 		log:           log,
 		priceMax:      priceMax,
 		localPrefixes: localPrefixes,
+		metrics:       metrics,
 	}
 }
 
@@ -59,9 +67,11 @@ func (m *Monitor) tick(ctx context.Context) {
 		avail, err := src.Check(ctx)
 		if err != nil {
 			m.log.Error("source check failed", "source", src.Name(), "err", err)
+			m.observeCheck(src.Name(), false, 0, 0, nil)
 			continue
 		}
 		stock, minPrice := availStats(avail)
+		m.observeCheck(src.Name(), true, len(avail), stock, minPrice)
 		attrs := []any{"source", src.Name(), "available", len(avail), "stock", stock}
 		if minPrice != nil {
 			attrs = append(attrs, "min_price", *minPrice)
@@ -119,6 +129,7 @@ func (m *Monitor) tick(ctx context.Context) {
 					continue
 				}
 				m.log.Info("price drop notified", "key", a.Key, "old", *prevPrice, "new", *a.Price)
+				m.observeNotification(a.Source)
 			}
 			if err := m.store.Touch(ctx, a); err != nil {
 				m.log.Error("touch failed", "key", a.Key, "err", err)
@@ -134,6 +145,7 @@ func (m *Monitor) tick(ctx context.Context) {
 		if err := m.store.Record(ctx, a); err != nil {
 			m.log.Error("record failed", "key", a.Key, "err", err)
 		}
+		m.observeNotification(a.Source)
 		m.log.Info("notified", "source", a.Source, "store", a.StoreName, "product", a.ProductName, "stock", a.Stock)
 	}
 }
@@ -163,6 +175,18 @@ func (m *Monitor) withinBudget(a model.Availability) bool {
 		return false
 	}
 	return true
+}
+
+func (m *Monitor) observeCheck(source string, ok bool, available, stock int, minPrice *float64) {
+	if m.metrics != nil {
+		m.metrics.ObserveCheck(source, ok, available, stock, minPrice)
+	}
+}
+
+func (m *Monitor) observeNotification(source string) {
+	if m.metrics != nil {
+		m.metrics.ObserveNotification(source)
+	}
 }
 
 // availStats sums the stock and finds the lowest known price across results.

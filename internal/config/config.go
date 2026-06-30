@@ -18,7 +18,8 @@ type Config struct {
 	CheckInterval time.Duration
 	HTTPTimeout   time.Duration
 	DBPath        string
-	PriceMax      int // whole euros; 0 = no limit
+	MetricsAddr   string // listen address for the Prometheus /metrics endpoint
+	PriceMax      int    // whole euros; 0 = no limit
 
 	PushoverToken    string
 	PushoverUser     string
@@ -88,6 +89,7 @@ func Load() (*Config, error) {
 		CheckInterval: envDuration("CHECK_INTERVAL", 5*time.Minute),
 		HTTPTimeout:   envDuration("HTTP_TIMEOUT", 30*time.Second),
 		DBPath:        envStr("DB_PATH", "klima.db"),
+		MetricsAddr:   envStr("METRICS_ADDR", ":8080"),
 		PriceMax:      envInt("PRICE_MAX", 0),
 
 		PushoverToken:    os.Getenv("PUSHOVER_TOKEN"),

@@ -59,6 +59,26 @@ listed prefixes. Online results are never filtered.
 Sources implement the `model.Source` interface, so adding another retailer is
 localised to one file — see **Adding a source** below.
 
+## Metrics
+
+The service exposes Prometheus metrics at `/metrics` (listen address
+`METRICS_ADDR`, default `:8080`), with one series per source:
+
+| Metric | Type | Description |
+| --- | --- | --- |
+| `portasplit_source_up` | gauge | last check succeeded (1) or failed (0) |
+| `portasplit_source_last_check_timestamp_seconds` | gauge | unix time of last check |
+| `portasplit_source_available` | gauge | in-stock offerings from last check |
+| `portasplit_source_stock` | gauge | total units from last check |
+| `portasplit_source_min_price_euros` | gauge | lowest known price (when available) |
+| `portasplit_source_checks_total` | counter | checks by `result` (`success`/`error`) |
+| `portasplit_source_notifications_total` | counter | notifications sent |
+
+The Helm chart ships a headless `-metrics` Service and a `ServiceMonitor`
+(`serviceMonitor.enabled`, default on) so the Prometheus Operator scrapes it
+automatically. A Grafana dashboard lives in the `solum` repo under
+`kube-prometheus-extras/dashboards/portasplit.json`.
+
 ## Configuration
 
 All settings come from environment variables, optionally supplied via a `.env`

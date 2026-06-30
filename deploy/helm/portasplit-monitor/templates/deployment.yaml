@@ -30,11 +30,16 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.metrics.port }}
           env:
             {{- range $k, $v := .Values.env }}
             - name: {{ $k }}
               value: {{ $v | quote }}
             {{- end }}
+            - name: METRICS_ADDR
+              value: {{ printf ":%v" .Values.metrics.port | quote }}
             {{- if .Values.flaresolverr.enabled }}
             - name: FLARESOLVERR_URL
               value: {{ printf "http://%s-flaresolverr:%v" (include "portasplit-monitor.fullname" .) .Values.flaresolverr.port | quote }}

@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"portasplit-monitor/internal/config"
+	"portasplit-monitor/internal/metrics"
 	"portasplit-monitor/internal/model"
 	"portasplit-monitor/internal/monitor"
 	"portasplit-monitor/internal/notify"
@@ -39,6 +40,9 @@ func main() {
 	defer db.Close()
 
 	httpClient := &http.Client{Timeout: cfg.HTTPTimeout}
+
+	mx := metrics.New()
+	go serveMetrics(cfg.MetricsAddr, mx, log)
 
 	notifier := notify.NewPushover(httpClient, cfg.PushoverToken, cfg.PushoverUser, cfg.PushoverPriority, cfg.PushoverDevice)
 
@@ -92,6 +96,16 @@ func main() {
 		os.Exit(2)
 	}
 
-	mon := monitor.New(sources, db, notifier, log, cfg.PriceMax, cfg.LocalPLZPrefixes)
+	mon := monitor.New(sources, db, notifier, log, cfg.PriceMax, cfg.LocalPLZPrefixes, mx)
 	mon.Run(ctx, cfg.CheckInterval)
+}
+
+// serveMetrics runs the Prometheus metrics HTTP server until the process exits.
+func serveMetrics(addr string, mx *metrics.Metrics, log *slog.Logger) {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", mx.Handler())
+	log.Info("metrics server listening", "addr", addr)
+	if err := http.ListenAndServe(addr, mux); err != nil {
+		log.Error("metrics server stopped", "err", err)
+	}
 }
