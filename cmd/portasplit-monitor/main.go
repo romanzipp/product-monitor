@@ -44,7 +44,7 @@ func main() {
 	mx := metrics.New()
 	go serveMetrics(cfg.MetricsAddr, mx, log)
 
-	notifier := notify.NewPushover(httpClient, cfg.PushoverToken, cfg.PushoverUser, cfg.PushoverPriority, cfg.PushoverDevice)
+	notifier := notify.NewPushover(httpClient, cfg.PushoverToken, cfg.PushoverUser, cfg.PushoverPriority, cfg.PushoverDevice, cfg.PushoverRetry, cfg.PushoverExpire)
 
 	var flareSolverr *source.FlareSolverr
 	if cfg.FlareSolverrURL != "" {

@@ -25,6 +25,10 @@ type Config struct {
 	PushoverUser     string
 	PushoverPriority int
 	PushoverDevice   string
+	// PushoverRetry/Expire apply to emergency priority (2): repeat every retry
+	// up to expire (seconds) until acknowledged.
+	PushoverRetry  int
+	PushoverExpire int
 
 	BraucheKlimaEnabled bool
 	BraucheKlimaURL     string
@@ -94,8 +98,10 @@ func Load() (*Config, error) {
 
 		PushoverToken:    os.Getenv("PUSHOVER_TOKEN"),
 		PushoverUser:     os.Getenv("PUSHOVER_USER"),
-		PushoverPriority: envInt("PUSHOVER_PRIORITY", 0),
+		PushoverPriority: envInt("PUSHOVER_PRIORITY", 2), // 2 = emergency
 		PushoverDevice:   os.Getenv("PUSHOVER_DEVICE"),
+		PushoverRetry:    envInt("PUSHOVER_RETRY", 60),
+		PushoverExpire:   envInt("PUSHOVER_EXPIRE", 3600),
 
 		BraucheKlimaEnabled: envBool("BRAUCHEKLIMA_ENABLED", true),
 		BraucheKlimaURL:     envStr("BRAUCHEKLIMA_URL", "https://braucheklima.de/api/availability"),

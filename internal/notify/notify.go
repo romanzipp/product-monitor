@@ -12,7 +12,8 @@ import (
 	"portasplit-monitor/internal/model"
 )
 
-const pushoverEndpoint = "https://api.pushover.net/1/messages.json"
+// pushoverEndpoint is a var so tests can point it at a stub server.
+var pushoverEndpoint = "https://api.pushover.net/1/messages.json"
 
 // Notifier is implemented by any notification backend.
 type Notifier interface {
@@ -26,16 +27,22 @@ type Pushover struct {
 	user     string
 	priority int
 	device   string
+	retry    int // emergency: seconds between repeats (>= 30)
+	expire   int // emergency: seconds until repeats stop (<= 10800)
 }
 
-// NewPushover constructs a Pushover notifier.
-func NewPushover(client *http.Client, token, user string, priority int, device string) *Pushover {
+// NewPushover constructs a Pushover notifier. retry/expire (in seconds) apply
+// only to emergency priority (2): the alert repeats every retry up to expire
+// until acknowledged.
+func NewPushover(client *http.Client, token, user string, priority int, device string, retry, expire int) *Pushover {
 	return &Pushover{
 		client:   client,
 		token:    token,
 		user:     user,
 		priority: priority,
 		device:   device,
+		retry:    retry,
+		expire:   expire,
 	}
 }
 
@@ -47,6 +54,22 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 	form.Set("title", truncate(fmt.Sprintf("PortaSplit verfügbar: %s 🔥", a.StoreName), 250))
 	form.Set("message", formatMessage(a))
 	form.Set("priority", strconv.Itoa(p.priority))
+	if p.priority >= 2 {
+		// Emergency priority requires retry/expire; clamp to Pushover's limits.
+		retry := p.retry
+		if retry < 30 {
+			retry = 30
+		}
+		expire := p.expire
+		if expire > 10800 {
+			expire = 10800
+		}
+		if expire < retry {
+			expire = retry
+		}
+		form.Set("retry", strconv.Itoa(retry))
+		form.Set("expire", strconv.Itoa(expire))
+	}
 	if p.device != "" {
 		form.Set("device", p.device)
 	}
