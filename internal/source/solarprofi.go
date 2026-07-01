@@ -40,7 +40,7 @@ func NewSolarProfi(client *http.Client, fs *FlareSolverr, urls []string) *SolarP
 			tokenFn:    solarprofiToken,
 			inStock:    schemaInStock,
 			outOfStock: schemaOutOfStock,
-			wantPrice:  true,
+			priceFn:    parsePrice,
 		},
 	}
 }

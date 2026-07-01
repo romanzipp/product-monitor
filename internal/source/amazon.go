@@ -9,10 +9,16 @@ import (
 
 var amazonASINRe = regexp.MustCompile(`/dp/([A-Za-z0-9]{10})`)
 
+// amazonBuyboxPriceRe pulls the price out of the first a-offscreen span (the
+// machine-readable amount), which on a product page is the buybox price. It runs
+// only for an in-stock result, so it isn't reached for OOS/bot pages.
+var amazonBuyboxPriceRe = regexp.MustCompile(`a-offscreen">\s*([0-9][0-9.,]*)`)
+
 // AmazonSource checks the Amazon product page. Amazon exposes no schema.org
-// availability, so stock is inferred from the buybox add-to-cart button, which
-// is only rendered when the item is buyable. Needs FlareSolverr (anti-bot), and
-// reports no price (so PRICE_MAX cannot filter Amazon offers).
+// availability, so stock is decided by the buybox: the real add-to-cart button
+// (id="add-to-cart-button") is only rendered when buyable, and id="outOfStock"
+// appears when it is not. Needs FlareSolverr (anti-bot). The ASIN must be present
+// on the page (token guard), which also rejects bot/captcha interstitials.
 type AmazonSource struct {
 	webCheck
 }
@@ -21,15 +27,17 @@ type AmazonSource struct {
 func NewAmazon(client *http.Client, fs *FlareSolverr, urls []string) *AmazonSource {
 	return &AmazonSource{
 		webCheck: webCheck{
-			name:      "amazon",
-			client:    client,
-			fs:        fs,
-			urls:      urls,
-			storeName: "Amazon",
-			product:   "Midea PortaSplit",
-			channel:   model.ChannelOnline,
-			tokenFn:   amazonASIN,
-			inStock:   []string{"add-to-cart-button"},
+			name:       "amazon",
+			client:     client,
+			fs:         fs,
+			urls:       urls,
+			storeName:  "Amazon",
+			product:    "Midea PortaSplit",
+			channel:    model.ChannelOnline,
+			tokenFn:    amazonASIN,
+			inStock:    []string{`id="add-to-cart-button"`},
+			outOfStock: []string{`id="outofstock"`},
+			priceFn:    amazonBuyboxPrice,
 		},
 	}
 }
@@ -40,4 +48,12 @@ func amazonASIN(url string) string {
 		return m[1]
 	}
 	return ""
+}
+
+// amazonBuyboxPrice extracts the buybox price from a (lowercased) page, or nil.
+func amazonBuyboxPrice(html string) *float64 {
+	if m := amazonBuyboxPriceRe.FindStringSubmatch(html); m != nil {
+		return parseAmount(m[1])
+	}
+	return nil
 }

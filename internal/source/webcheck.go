@@ -32,7 +32,7 @@ func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, urls []s
 		tokenFn:    productToken,
 		inStock:    schemaInStock,
 		outOfStock: schemaOutOfStock,
-		wantPrice:  true,
+		priceFn:    parsePrice,
 	}
 }
 
@@ -42,18 +42,23 @@ func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, urls []s
 var priceMicroRe = regexp.MustCompile(`itemprop="price"[^>]*content="([0-9](?:[0-9.,]*[0-9])?)"`)
 var priceJSONRe = regexp.MustCompile(`"price"\s*:\s*"?([0-9](?:[0-9.,]*[0-9])?)`)
 
-// parsePrice extracts the product price from a (lowercased) page, or nil.
+// parsePrice extracts the schema.org price from a (lowercased) page, or nil.
 func parsePrice(html string) *float64 {
-	var raw string
 	if m := priceMicroRe.FindStringSubmatch(html); m != nil {
-		raw = m[1]
-	} else if m := priceJSONRe.FindStringSubmatch(html); m != nil {
-		raw = m[1]
+		return parseAmount(m[1])
 	}
+	if m := priceJSONRe.FindStringSubmatch(html); m != nil {
+		return parseAmount(m[1])
+	}
+	return nil
+}
+
+// parseAmount parses a price string, normalising German formats like "2.949,99"
+// and "799,00", and returns nil for a non-positive or invalid value.
+func parseAmount(raw string) *float64 {
 	if raw == "" {
 		return nil
 	}
-	// Normalise German "2.949,99" and "799,00" to a parseable form.
 	if strings.Contains(raw, ".") && strings.Contains(raw, ",") {
 		raw = strings.ReplaceAll(raw, ".", "")
 		raw = strings.ReplaceAll(raw, ",", ".")
@@ -92,7 +97,7 @@ type webCheck struct {
 	tokenFn    func(string) string // required page token per URL (empty = no guard)
 	inStock    []string
 	outOfStock []string
-	wantPrice  bool
+	priceFn    func(string) *float64 // extracts price from the page (nil = no price)
 }
 
 func (s *webCheck) Name() string {
@@ -173,8 +178,8 @@ func (s *webCheck) checkOne(ctx context.Context, url string) (*model.Availabilit
 		Channel:     s.channel,
 		Key:         s.name + ":" + url,
 	}
-	if s.wantPrice {
-		a.Price = parsePrice(html)
+	if s.priceFn != nil {
+		a.Price = s.priceFn(html)
 	}
 	return &a, nil
 }
