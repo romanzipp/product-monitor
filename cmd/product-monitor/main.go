@@ -129,6 +129,19 @@ func main() {
 	if cfg.KlimaVertriebEnabled {
 		sources = append(sources, source.NewKlimaVertrieb(httpClient, nil, cfg.KlimaVertriebURLs))
 	}
+	if cfg.GroupSumiEnabled {
+		sources = append(sources, source.NewGroupSumi(httpClient, nil, cfg.GroupSumiURLs))
+	}
+	if cfg.WeinmannSchanzEnabled {
+		sources = append(sources, source.NewWeinmannSchanz(httpClient, nil, cfg.WeinmannSchanzURLs))
+	}
+	if cfg.TalentKingEnabled {
+		sources = append(sources, source.NewTalentKing(httpClient, nil, cfg.TalentKingURLs))
+	}
+	if cfg.HeizungBilligerEnabled {
+		// Behind Cloudflare (JA3 wall): route through FlareSolverr.
+		sources = append(sources, source.NewHeizungBilliger(httpClient, flareSolverr, cfg.HeizungBilligerURLs))
+	}
 	if cfg.BauhausStoreEnabled {
 		if flareSolverr == nil {
 			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")

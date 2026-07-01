@@ -47,6 +47,10 @@ products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
 | `grz` | grz-haustechnik.de pages, delivery lead time | `urls` | online |
 | `selfio` | selfio.de product pages | `urls` | online |
 | `klimavertrieb` | klima-vertrieb.de product pages | `urls` | online |
+| `groupsumi` | groupsumi.de product pages | `urls` | online |
+| `weinmannschanz` | weinmann-schanz.de (B2B, no price) | `urls` | online |
+| `talentking` | talent-king.de product pages | `urls` | online |
+| `heizungbilliger` | heizung-billiger.de (Cloudflare, needs FlareSolverr) | `urls` | online |
 | `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `storeIDs` | in-store |
 
 Online retailers each have their own source (direct product-page check); the

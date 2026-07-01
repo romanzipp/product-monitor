@@ -133,6 +133,25 @@ sources:
     enabled: true
     urls:
       - https://klima-vertrieb.de/klima/mobile-klimaanlagen/midea/819/midea-portasplit-mobiles-split-klimageraet-waermepumpe-3-5-kw-a
+  groupsumi:
+    enabled: true
+    urls:
+      - https://groupsumi.de/heizung/klimaanlage/klimaanlage-mobil/4-in-1-tragbare-klimaanlage-und-luftentfeuchter-midea-portasplit-3-5-kw-13907811
+  # B2B wholesaler: availability shown to anonymous visitors, but prices are
+  # customer-group gated, so no price is reported. id 3 = long delivery = pre-order.
+  weinmannschanz:
+    enabled: true
+    urls:
+      - https://www.weinmann-schanz.de/de/de/produkte/produkt.html/mobiles-split-klimageraet-r-32-midea-porta-split-3-5kw-90-134-79.html
+  talentking:
+    enabled: true
+    urls:
+      - https://talent-king.de/products/midea-portasplit-mobiles-split-klimagerat-warmepumpe-3-5-kw-a
+  # PrestaShop behind Cloudflare (JA3 wall): needs flaresolverr.
+  heizungbilliger:
+    enabled: true
+    urls:
+      - https://heizung-billiger.de/736321-midea-mobiles-split-klimagerat-porta-split-r32-35kw-heizen-kuhlen-230v-midea-10002085-4048164116478.html
   # Bauhaus store pickup availability, checked per product×store (needs
   # flaresolverr; product 31934233 = PortaSplit, store 589 = Frankfurt).
   bauhausStore:

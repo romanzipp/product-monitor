@@ -100,6 +100,18 @@ type Config struct {
 	KlimaVertriebEnabled bool
 	KlimaVertriebURLs    []string
 
+	GroupSumiEnabled bool
+	GroupSumiURLs    []string
+
+	WeinmannSchanzEnabled bool
+	WeinmannSchanzURLs    []string
+
+	TalentKingEnabled bool
+	TalentKingURLs    []string
+
+	HeizungBilligerEnabled bool
+	HeizungBilligerURLs    []string
+
 	BauhausStoreEnabled    bool
 	BauhausStoreProductIDs []string
 	BauhausStoreIDs        []string
@@ -188,9 +200,13 @@ type fileConfig struct {
 		SolarHandel24 sourceFile `yaml:"solarhandel24"`
 		SchwabKlima   sourceFile `yaml:"schwabklima"`
 		Grz           sourceFile `yaml:"grz"`
-		Selfio        sourceFile `yaml:"selfio"`
-		KlimaVertrieb sourceFile `yaml:"klimavertrieb"`
-		BauhausStore  struct {
+		Selfio          sourceFile `yaml:"selfio"`
+		KlimaVertrieb   sourceFile `yaml:"klimavertrieb"`
+		GroupSumi       sourceFile `yaml:"groupsumi"`
+		WeinmannSchanz  sourceFile `yaml:"weinmannschanz"`
+		TalentKing      sourceFile `yaml:"talentking"`
+		HeizungBilliger sourceFile `yaml:"heizungbilliger"`
+		BauhausStore    struct {
 			Enabled    bool     `yaml:"enabled"`
 			ProductIDs []string `yaml:"productIDs"`
 			StoreIDs   []string `yaml:"storeIDs"`
@@ -283,6 +299,15 @@ func Load(path string) (*Config, error) {
 		KlimaVertriebEnabled: fc.Sources.KlimaVertrieb.Enabled,
 		KlimaVertriebURLs:    fc.Sources.KlimaVertrieb.URLs,
 
+		GroupSumiEnabled:       fc.Sources.GroupSumi.Enabled,
+		GroupSumiURLs:          fc.Sources.GroupSumi.URLs,
+		WeinmannSchanzEnabled:  fc.Sources.WeinmannSchanz.Enabled,
+		WeinmannSchanzURLs:     fc.Sources.WeinmannSchanz.URLs,
+		TalentKingEnabled:      fc.Sources.TalentKing.Enabled,
+		TalentKingURLs:         fc.Sources.TalentKing.URLs,
+		HeizungBilligerEnabled: fc.Sources.HeizungBilliger.Enabled,
+		HeizungBilligerURLs:    fc.Sources.HeizungBilliger.URLs,
+
 		BauhausStoreEnabled:    fc.Sources.BauhausStore.Enabled,
 		BauhausStoreProductIDs: fc.Sources.BauhausStore.ProductIDs,
 		BauhausStoreIDs:        fc.Sources.BauhausStore.StoreIDs,
@@ -304,6 +329,7 @@ func (c *Config) validate() error {
 	}
 	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.SolarProfiEnabled ||
 		c.GalaxusEnabled || c.Solario24Enabled || c.EvolarShopEnabled || c.BueromarktEnabled || c.ExpertEnabled || c.ProsatechEnabled || c.TadoEnabled || c.SolarHandel24Enabled || c.SchwabKlimaEnabled || c.GrzEnabled || c.SelfioEnabled || c.KlimaVertriebEnabled ||
+		c.GroupSumiEnabled || c.WeinmannSchanzEnabled || c.TalentKingEnabled || c.HeizungBilligerEnabled ||
 		c.BauhausStoreEnabled
 	if !anySource {
 		return fmt.Errorf("at least one source must be enabled")
