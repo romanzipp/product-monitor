@@ -23,9 +23,11 @@ var weinmannSKURe = regexp.MustCompile(`(\d+-\d+-\d+)\.html`)
 
 // WeinmannSchanzSource checks weinmann-schanz.de, a B2B wholesaler (Magento PWA).
 // It exposes no schema.org availability; stock lives in an `availabilityJson` blob
-// with a numeric id (1 = "Sofort Lieferbar", 3 = long delivery, 7 = out of stock)
-// and an is_in_stock flag. Prices are customer-group gated and not shown to
-// anonymous visitors, so no price is reported. Not anti-bot protected.
+// with a numeric id. Only id 1 ("Sofort Lieferbar") is real stock; id 3 ("Derzeit
+// nicht auf Lager - Lieferzeit ca. 5-7 Wochen") and id 7 ("Aktuell nicht lieferbar")
+// are backorder/out-of-stock (their is_in_stock flag is unreliable). Prices are
+// customer-group gated and not shown to anonymous visitors, so no price is
+// reported. Not anti-bot protected.
 type WeinmannSchanzSource struct {
 	client *http.Client
 	fs     *FlareSolverr // optional
@@ -83,14 +85,15 @@ func (s *WeinmannSchanzSource) checkOne(ctx context.Context, url string) (*model
 		return nil, nil
 	}
 	var av struct {
-		ID        int    `json:"id"`
-		Message   string `json:"message"`
-		IsInStock bool   `json:"is_in_stock"`
+		ID int `json:"id"`
 	}
 	if err := json.Unmarshal([]byte(strings.ReplaceAll(m[1], `\"`, `"`)), &av); err != nil {
 		return nil, nil
 	}
-	if !av.IsInStock {
+	// Only id 1 ("Sofort Lieferbar") is genuinely in stock. The is_in_stock flag is
+	// unreliable: id 3 ("Derzeit nicht auf Lager - Lieferzeit ca. 5-7 Wochen") and
+	// id 7 ("Aktuell nicht lieferbar") both mean not available, so they must not alert.
+	if av.ID != 1 {
 		return nil, nil
 	}
 
@@ -102,9 +105,6 @@ func (s *WeinmannSchanzSource) checkOne(ctx context.Context, url string) (*model
 		URL:         url,
 		Location:    "Online",
 		Channel:     model.ChannelOnline,
-		// id 1 = "Sofort Lieferbar"; anything else in-stock (e.g. 3) is a long
-		// delivery time, i.e. a pre-order.
-		PreOrder: av.ID != 1,
-		Key:      s.Name() + ":" + url,
+		Key:         s.Name() + ":" + url,
 	}, nil
 }

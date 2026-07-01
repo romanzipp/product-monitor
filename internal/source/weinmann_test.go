@@ -23,12 +23,11 @@ func TestWeinmannSchanzAvailability(t *testing.T) {
 		name      string
 		html      string
 		available bool
-		preOrder  bool
 	}{
-		{"in stock id 1", blob(1, "true"), true, false},
-		{"long delivery id 3", blob(3, "true"), true, true},
-		{"out of stock id 7", blob(7, "false"), false, false},
-		{"soft 404 without token", `availabilityJson&#34;:&#34;{\&#34;id\&#34;:1,\&#34;is_in_stock\&#34;:true}&#34; 0000000`, false, false},
+		{"in stock id 1", blob(1, "true"), true},
+		{"long delivery id 3 not available", blob(3, "true"), false},
+		{"out of stock id 7", blob(7, "false"), false},
+		{"soft 404 without token", `availabilityJson&#34;:&#34;{\&#34;id\&#34;:1,\&#34;is_in_stock\&#34;:true}&#34; 0000000`, false},
 	}
 
 	for _, tc := range cases {
@@ -43,9 +42,6 @@ func TestWeinmannSchanzAvailability(t *testing.T) {
 			}
 			if available := len(got) > 0; available != tc.available {
 				t.Fatalf("available=%v, want %v (%+v)", available, tc.available, got)
-			}
-			if tc.available && got[0].PreOrder != tc.preOrder {
-				t.Errorf("preOrder=%v, want %v", got[0].PreOrder, tc.preOrder)
 			}
 		})
 	}
