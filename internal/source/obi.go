@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 // ObiSource queries the OBI product availability API, which returns two arrays:

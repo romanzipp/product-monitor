@@ -11,13 +11,13 @@ import (
 	"os/signal"
 	"syscall"
 
-	"portasplit-monitor/internal/config"
-	"portasplit-monitor/internal/metrics"
-	"portasplit-monitor/internal/model"
-	"portasplit-monitor/internal/monitor"
-	"portasplit-monitor/internal/notify"
-	"portasplit-monitor/internal/source"
-	"portasplit-monitor/internal/store"
+	"product-monitor/internal/config"
+	"product-monitor/internal/metrics"
+	"product-monitor/internal/model"
+	"product-monitor/internal/monitor"
+	"product-monitor/internal/notify"
+	"product-monitor/internal/source"
+	"product-monitor/internal/store"
 )
 
 func main() {

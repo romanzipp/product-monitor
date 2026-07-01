@@ -11,12 +11,12 @@
 #
 # Usage:
 #   REMOTE=user@host ./deploy/deploy.sh
-#   REMOTE=user@host INSTALL_DIR=/srv/portasplit-monitor ./deploy/deploy.sh
+#   REMOTE=user@host INSTALL_DIR=/srv/product-monitor ./deploy/deploy.sh
 #
 set -euo pipefail
 
 REMOTE="${REMOTE:?Set REMOTE=user@host}"
-INSTALL_DIR="${INSTALL_DIR:-/opt/portasplit-monitor}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/product-monitor}"
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 log() { echo "[deploy] $*"; }

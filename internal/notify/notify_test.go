@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"testing"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 func captureForm(t *testing.T, p *Pushover) url.Values {

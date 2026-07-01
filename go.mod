@@ -1,4 +1,4 @@
-module portasplit-monitor
+module product-monitor
 
 go 1.25.0
 

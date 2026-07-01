@@ -1,4 +1,4 @@
-# portasplit-monitor
+# product-monitor
 
 A small Go service that monitors stock of the **Midea PortaSplit** portable AC
 across several German retailers and pushes a [Pushover](https://pushover.net)
@@ -103,7 +103,7 @@ cp .env.example .env               # PUSHOVER_TOKEN / PUSHOVER_USER
 cp config.example.yaml config.yaml
 ```
 
-Then edit `config.yaml` for the container: set `dbPath: /data/portasplit-monitor.db`
+Then edit `config.yaml` for the container: set `dbPath: /data/product-monitor.db`
 and `flaresolverr.url: http://flaresolverr:8191`. It is mounted read-only into the
 monitor container. Finally:
 
@@ -130,10 +130,10 @@ Kubernetes deployment (which uses the Helm chart + Argo).
 
 ```bash
 REMOTE=user@host make deploy
-# or: REMOTE=user@host INSTALL_DIR=/srv/portasplit-monitor ./deploy/deploy.sh
+# or: REMOTE=user@host INSTALL_DIR=/srv/product-monitor ./deploy/deploy.sh
 ```
 
-The repo is synced to `/opt/portasplit-monitor` (override with `INSTALL_DIR`).
+The repo is synced to `/opt/product-monitor` (override with `INSTALL_DIR`).
 Your local `.env` and `config.yaml` are uploaded only on the first deploy; later
 runs leave the server-side copies and the database volume untouched.
 
@@ -141,7 +141,7 @@ runs leave the server-side copies and the database volume untouched.
 
 1. Implement `model.Source` (`Name() string` + `Check(ctx) ([]Availability, error)`)
    in a new file under `internal/source/`.
-2. In `cmd/portasplit-monitor/main.go`, construct it and append to the
+2. In `cmd/product-monitor/main.go`, construct it and append to the
    `sources` slice (gated by its own config flag), and add the field to
    `internal/config` + `config.example.yaml`.
 3. Map every distinct in-stock result to a stable `Availability.Key` so the

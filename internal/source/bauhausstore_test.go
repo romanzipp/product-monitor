@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 func TestBauhausStoreBuild(t *testing.T) {

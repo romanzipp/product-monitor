@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"portasplit-monitor/internal/model"
-	"portasplit-monitor/internal/notify"
-	"portasplit-monitor/internal/store"
+	"product-monitor/internal/model"
+	"product-monitor/internal/notify"
+	"product-monitor/internal/store"
 )
 
 // Recorder receives per-source observations for metrics. May be nil.

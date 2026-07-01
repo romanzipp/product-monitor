@@ -1,4 +1,4 @@
-# portasplit-monitor configuration.
+# product-monitor configuration.
 # Copy to config.yaml and run: `make run` (or mount it in Docker/Kubernetes).
 # Secrets are NOT set here — PUSHOVER_TOKEN and PUSHOVER_USER come from the
 # environment (or a .env file). Every field below is optional; omitted keys fall
@@ -6,7 +6,7 @@
 
 checkInterval: 5m
 httpTimeout: 30s
-dbPath: klima.db            # container/prod: /data/portasplit-monitor.db
+dbPath: klima.db            # container/prod: /data/product-monitor.db
 metricsAddr: ":8080"        # Prometheus /metrics listen address
 priceMax: 0                 # ignore offers above this many euros; 0 = no limit
 

@@ -1,10 +1,10 @@
 .PHONY: build run tidy vet deploy clean
 
 build:
-	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/portasplit-monitor ./cmd/portasplit-monitor
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w" -o bin/product-monitor ./cmd/product-monitor
 
 run:
-	go run ./cmd/portasplit-monitor
+	go run ./cmd/product-monitor
 
 tidy:
 	go mod tidy

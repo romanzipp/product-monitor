@@ -11,7 +11,7 @@ import (
 
 	_ "modernc.org/sqlite" // pure-Go SQLite driver (no CGO)
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 type Store struct {

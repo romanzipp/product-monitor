@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "portasplit-monitor.fullname" . }}-flaresolverr
+  name: {{ include "product-monitor.fullname" . }}-flaresolverr
   labels:
-    {{- include "portasplit-monitor.labels" . | nindent 4 }}
+    {{- include "product-monitor.labels" . | nindent 4 }}
     app.kubernetes.io/component: flaresolverr
 spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "portasplit-monitor.selectorLabels" . | nindent 6 }}
+      {{- include "product-monitor.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: flaresolverr
   template:
     metadata:
       labels:
-        {{- include "portasplit-monitor.selectorLabels" . | nindent 8 }}
+        {{- include "product-monitor.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: flaresolverr
     spec:
       {{- with .Values.imagePullSecrets }}
@@ -65,13 +65,13 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "portasplit-monitor.fullname" . }}-flaresolverr
+  name: {{ include "product-monitor.fullname" . }}-flaresolverr
   labels:
-    {{- include "portasplit-monitor.labels" . | nindent 4 }}
+    {{- include "product-monitor.labels" . | nindent 4 }}
     app.kubernetes.io/component: flaresolverr
 spec:
   selector:
-    {{- include "portasplit-monitor.selectorLabels" . | nindent 4 }}
+    {{- include "product-monitor.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: flaresolverr
   ports:
     - name: http

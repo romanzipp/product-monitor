@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 // pushoverEndpoint is a var so tests can point it at a stub server.

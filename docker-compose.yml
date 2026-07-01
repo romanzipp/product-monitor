@@ -6,17 +6,17 @@ services:
       context: .
       args:
         VERSION: dev
-    image: portasplit-monitor:dev
+    image: product-monitor:dev
     restart: unless-stopped
     # Non-secret config comes from the mounted config.yaml; secrets (PUSHOVER_*)
     # from .env. Copy config.example.yaml to config.yaml and set dbPath:
-    # /data/portasplit-monitor.db and flaresolverr.url: http://flaresolverr:8191
-    command: ["-config", "/etc/portasplit-monitor/config.yaml"]
+    # /data/product-monitor.db and flaresolverr.url: http://flaresolverr:8191
+    command: ["-config", "/etc/product-monitor/config.yaml"]
     env_file: .env
     ports:
       - "8080:8080" # Prometheus /metrics
     volumes:
-      - ./config.yaml:/etc/portasplit-monitor/config.yaml:ro
+      - ./config.yaml:/etc/product-monitor/config.yaml:ro
       - monitor-data:/data
     depends_on:
       flaresolverr:

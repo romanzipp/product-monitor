@@ -13,7 +13,7 @@ import (
 // sources treat as "not available" rather than a hard error.
 var errNotFound = errors.New("not found")
 
-const userAgent = "portasplit-monitor/1.0"
+const userAgent = "product-monitor/1.0"
 
 // browserUserAgent is for sources that reject non-browser clients with 404/403.
 const browserUserAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"

@@ -7,7 +7,7 @@ when:
 
 variables:
   - &registry registry.apex.romanzipp.cloud
-  - &image_repo registry.apex.romanzipp.cloud/portasplit-monitor-image
+  - &image_repo registry.apex.romanzipp.cloud/product-monitor-image
   - &step_resources
     backend_options:
       kubernetes:
@@ -46,5 +46,5 @@ steps:
         from_secret: registry_token
     commands:
       - echo "$REGISTRY_TOKEN" | helm registry login registry.apex.romanzipp.cloud --username "$REGISTRY_USERNAME" --password-stdin
-      - helm package deploy/helm/portasplit-monitor --version "$CI_COMMIT_TAG" --app-version "$CI_COMMIT_TAG" --destination dist/
-      - helm push "dist/portasplit-monitor-chart-${CI_COMMIT_TAG}.tgz" oci://registry.apex.romanzipp.cloud
+      - helm package deploy/helm/product-monitor --version "$CI_COMMIT_TAG" --app-version "$CI_COMMIT_TAG" --destination dist/
+      - helm push "dist/product-monitor-chart-${CI_COMMIT_TAG}.tgz" oci://registry.apex.romanzipp.cloud

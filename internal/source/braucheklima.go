@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 // BraucheKlimaSource reads the aggregated availability feed from braucheklima.de,

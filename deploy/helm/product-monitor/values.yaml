@@ -1,12 +1,12 @@
 image:
-  repository: registry.apex.romanzipp.cloud/portasplit-monitor-image
+  repository: registry.apex.romanzipp.cloud/product-monitor-image
   pullPolicy: IfNotPresent
   # Defaults to .Chart.AppVersion (== the git tag the chart was packaged from).
   tag: ""
 
-# Keep K8s resource names as `portasplit-monitor` even though the chart is
-# `portasplit-monitor-chart`.
-fullnameOverride: portasplit-monitor
+# Keep K8s resource names as `product-monitor` even though the chart is
+# `product-monitor-chart`.
+fullnameOverride: product-monitor
 
 # Cluster-specific image pull credentials. Populated from the cluster
 # (e.g. zot-pull-secret reflected by Reflector). Example:
@@ -15,13 +15,13 @@ fullnameOverride: portasplit-monitor
 imagePullSecrets: []
 
 # Non-secret runtime config, rendered verbatim into config.yaml (a ConfigMap
-# mounted at /etc/portasplit-monitor/config.yaml). Secrets (PUSHOVER_TOKEN,
+# mounted at /etc/product-monitor/config.yaml). Secrets (PUSHOVER_TOKEN,
 # PUSHOVER_USER) come from envFromSecret. See config.example.yaml for the schema.
 # flaresolverr.url points at the in-cluster FlareSolverr Service below.
 config:
   checkInterval: 5m
   httpTimeout: 30s
-  dbPath: /data/portasplit-monitor.db
+  dbPath: /data/product-monitor.db
   metricsAddr: ":8080"
   priceMax: 0
   homePLZ: "36037"
@@ -32,7 +32,7 @@ config:
     expire: 3600
     device: ""
   flaresolverr:
-    url: http://portasplit-monitor-flaresolverr:8191
+    url: http://product-monitor-flaresolverr:8191
     timeout: 60s
   sources:
     braucheklima:
@@ -81,7 +81,7 @@ flaresolverr:
 # the Pushover credentials (PUSHOVER_TOKEN, PUSHOVER_USER). Cluster-specific.
 # Example:
 #   envFromSecret:
-#     name: portasplit-monitor
+#     name: product-monitor
 envFromSecret:
   name: ""
 

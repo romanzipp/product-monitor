@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 const bauhausStoreProduct = "31934233"

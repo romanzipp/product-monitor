@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 // JSON-LD schema.org availability tokens. The structured Offer availability is

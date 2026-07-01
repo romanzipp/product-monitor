@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 // feedFixture mirrors the real braucheklima feed shape: an online seller (no

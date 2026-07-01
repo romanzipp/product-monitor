@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"testing"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 func TestIsLocal(t *testing.T) {

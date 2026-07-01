@@ -1,8 +1,8 @@
-{{- define "portasplit-monitor.name" -}}
+{{- define "product-monitor.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "portasplit-monitor.fullname" -}}
+{{- define "product-monitor.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -11,20 +11,20 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "portasplit-monitor.labels" -}}
-app.kubernetes.io/name: {{ include "portasplit-monitor.name" . }}
+{{- define "product-monitor.labels" -}}
+app.kubernetes.io/name: {{ include "product-monitor.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end -}}
 
-{{- define "portasplit-monitor.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "portasplit-monitor.name" . }}
+{{- define "product-monitor.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "product-monitor.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 
-{{- define "portasplit-monitor.image" -}}
+{{- define "product-monitor.image" -}}
 {{- $tag := default .Chart.AppVersion .Values.image.tag -}}
 {{ .Values.image.repository }}:{{ $tag }}
 {{- end -}}

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"regexp"
 
-	"portasplit-monitor/internal/model"
+	"product-monitor/internal/model"
 )
 
 const amazonDefaultURL = "https://www.amazon.de/dp/B0D3PP64JS"

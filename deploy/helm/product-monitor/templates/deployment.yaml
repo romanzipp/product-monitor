@@ -1,21 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "portasplit-monitor.fullname" . }}
+  name: {{ include "product-monitor.fullname" . }}
   labels:
-    {{- include "portasplit-monitor.labels" . | nindent 4 }}
+    {{- include "product-monitor.labels" . | nindent 4 }}
 spec:
   replicas: 1
   strategy:
     type: Recreate
   selector:
     matchLabels:
-      {{- include "portasplit-monitor.selectorLabels" . | nindent 6 }}
+      {{- include "product-monitor.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: app
   template:
     metadata:
       labels:
-        {{- include "portasplit-monitor.selectorLabels" . | nindent 8 }}
+        {{- include "product-monitor.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: app
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
@@ -27,14 +27,14 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
-        - name: portasplit-monitor
-          image: {{ include "portasplit-monitor.image" . }}
+        - name: product-monitor
+          image: {{ include "product-monitor.image" . }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           args:
             - -config
-            - /etc/portasplit-monitor/config.yaml
+            - /etc/product-monitor/config.yaml
           ports:
             - name: metrics
               containerPort: {{ .Values.metrics.port }}
@@ -55,7 +55,7 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
             - name: config
-              mountPath: /etc/portasplit-monitor
+              mountPath: /etc/product-monitor
               readOnly: true
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
@@ -64,13 +64,13 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "portasplit-monitor.fullname" . }}-config
+            name: {{ include "product-monitor.fullname" . }}-config
         - name: tmp
           emptyDir: {}
         - name: data
         {{- if .Values.persistence.enabled }}
           persistentVolumeClaim:
-            claimName: {{ include "portasplit-monitor.fullname" . }}-data
+            claimName: {{ include "product-monitor.fullname" . }}-data
         {{- else }}
           emptyDir: {}
         {{- end }}
