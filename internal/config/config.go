@@ -60,6 +60,9 @@ type Config struct {
 	ToomEnabled bool
 	ToomURLs    []string
 
+	SolarProfiEnabled bool
+	SolarProfiURLs    []string
+
 	BauhausStoreEnabled    bool
 	BauhausStoreProductIDs []string
 	BauhausStoreIDs        []string
@@ -133,6 +136,7 @@ type fileConfig struct {
 		Hagebau      sourceFile `yaml:"hagebau"`
 		Hornbach     sourceFile `yaml:"hornbach"`
 		Toom         sourceFile `yaml:"toom"`
+		SolarProfi   sourceFile `yaml:"solarprofi"`
 		BauhausStore struct {
 			Enabled    bool     `yaml:"enabled"`
 			ProductIDs []string `yaml:"productIDs"`
@@ -197,6 +201,8 @@ func Load(path string) (*Config, error) {
 		HornbachURLs:      fc.Sources.Hornbach.URLs,
 		ToomEnabled:       fc.Sources.Toom.Enabled,
 		ToomURLs:          fc.Sources.Toom.URLs,
+		SolarProfiEnabled: fc.Sources.SolarProfi.Enabled,
+		SolarProfiURLs:    fc.Sources.SolarProfi.URLs,
 
 		BauhausStoreEnabled:    fc.Sources.BauhausStore.Enabled,
 		BauhausStoreProductIDs: fc.Sources.BauhausStore.ProductIDs,
@@ -217,7 +223,7 @@ func (c *Config) validate() error {
 	if c.PushoverToken == "" || c.PushoverUser == "" {
 		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER environment variables are required")
 	}
-	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.BauhausStoreEnabled
+	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.SolarProfiEnabled || c.BauhausStoreEnabled
 	if !anySource {
 		return fmt.Errorf("at least one source must be enabled")
 	}

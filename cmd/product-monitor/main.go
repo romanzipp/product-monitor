@@ -87,6 +87,10 @@ func main() {
 	if cfg.ToomEnabled {
 		sources = append(sources, source.NewToom(httpClient, flareSolverr, cfg.ToomURLs))
 	}
+	if cfg.SolarProfiEnabled {
+		// Not anti-bot protected; fetch directly (no FlareSolverr).
+		sources = append(sources, source.NewSolarProfi(httpClient, nil, cfg.SolarProfiURLs))
+	}
 	if cfg.BauhausStoreEnabled {
 		if flareSolverr == nil {
 			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")

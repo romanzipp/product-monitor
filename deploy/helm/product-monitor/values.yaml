@@ -67,6 +67,9 @@ config:
     toom:
       enabled: true
       urls: ["https://toom.de/p/mobiles-klimageraet-portasplit-12000-btuh/9350668"]
+    solarprofi:
+      enabled: true
+      urls: ["https://shop.solarprofi-24.de/haustechnik/7212/midea-mobiles-split-klimageraet-porta-split-3-5-kw-r-32-raumklimageraet-4-in-1-komfort"]
     bauhausStore:
       enabled: true
       productIDs: ["31934233"]

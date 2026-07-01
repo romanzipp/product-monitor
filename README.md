@@ -34,22 +34,18 @@ products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
 | `hagebau` | Hagebau product pages | `urls` | online |
 | `hornbach` | Hornbach product pages | `urls` | online |
 | `toom` | toom product pages | `urls` | online |
+| `solarprofi` | solarprofi-24.de product pages | `urls` | online |
 | `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `storeIDs` | in-store |
 
 Online retailers each have their own source (direct product-page check); the
 `braucheklima` feed contributes physical-store stock only, so online stores are
-not double-counted. Online product-page sources rely on `FlareSolverr` (several
-retailers are anti-bot protected or JS-rendered) and most use the `schema.org`
-JSON-LD availability; Amazon has no such marker, so its buybox add-to-cart button
-is used and it reports no price.
+not double-counted. Most product-page sources read the `schema.org` JSON-LD
+availability; Amazon has no such marker, so its buybox add-to-cart button is used
+and it reports no price.
 
-`bauhaus-store` checks one Bauhaus store's pickup stock via the
-`/api/purchasability` endpoint. That endpoint is XHR-only behind Cloudflare, so a
-FlareSolverr session (clearance cookie + user agent) is harvested and the API is
-called directly. This requires the monitor and FlareSolverr to share an egress IP
-(the clearance cookie is IP-bound) — true for the Docker Compose / single-host
-setup. Its result is store-targeted, so it bypasses the `localPLZPrefixes`
-filter.
+`bauhaus-store` checks a Bauhaus store's pickup stock via the
+`/api/purchasability` endpoint. Its result is store-targeted, so it bypasses the
+`localPLZPrefixes` filter.
 
 ### Online vs in-store
 
@@ -107,9 +103,8 @@ cp .env.example .env               # PUSHOVER_TOKEN / PUSHOVER_USER
 cp config.example.yaml config.yaml
 ```
 
-Then edit `config.yaml` for the container: set `dbPath: /data/product-monitor.db`
-and `flaresolverr.url: http://flaresolverr:8191`. It is mounted read-only into the
-monitor container. Finally:
+Then edit `config.yaml` for the container: set `dbPath: /data/product-monitor.db`.
+It is mounted read-only into the monitor container. Finally:
 
 ```bash
 docker compose up -d --build
