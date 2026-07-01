@@ -51,6 +51,12 @@ products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
 | `weinmannschanz` | weinmann-schanz.de (B2B, no price) | `urls` | online |
 | `talentking` | talent-king.de product pages | `urls` | online |
 | `heizungbilliger` | heizung-billiger.de (Cloudflare, needs FlareSolverr) | `urls` | online |
+| `tecedo` | tecedo.de product pages | `urls` | online |
+| `mediadeal` | mediadeal.de product pages | `urls` | online |
+| `klimafy` | klimafy.de product pages | `urls` | online |
+| `entratek` | entratek-shop.de product pages | `urls` | online |
+| `bobselektro` | bobselektro.de, delivery-badge check | `urls` | online |
+| `grsolar` | gr-solar.de product pages | `urls` | online |
 | `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `storeIDs` | in-store |
 
 Online retailers each have their own source (direct product-page check); the

@@ -112,6 +112,24 @@ type Config struct {
 	HeizungBilligerEnabled bool
 	HeizungBilligerURLs    []string
 
+	TecedoEnabled bool
+	TecedoURLs    []string
+
+	MediaDealEnabled bool
+	MediaDealURLs    []string
+
+	KlimafyEnabled bool
+	KlimafyURLs    []string
+
+	EntratekEnabled bool
+	EntratekURLs    []string
+
+	BobsElektroEnabled bool
+	BobsElektroURLs    []string
+
+	GrSolarEnabled bool
+	GrSolarURLs    []string
+
 	BauhausStoreEnabled    bool
 	BauhausStoreProductIDs []string
 	BauhausStoreIDs        []string
@@ -206,6 +224,12 @@ type fileConfig struct {
 		WeinmannSchanz  sourceFile `yaml:"weinmannschanz"`
 		TalentKing      sourceFile `yaml:"talentking"`
 		HeizungBilliger sourceFile `yaml:"heizungbilliger"`
+		Tecedo          sourceFile `yaml:"tecedo"`
+		MediaDeal       sourceFile `yaml:"mediadeal"`
+		Klimafy         sourceFile `yaml:"klimafy"`
+		Entratek        sourceFile `yaml:"entratek"`
+		BobsElektro     sourceFile `yaml:"bobselektro"`
+		GrSolar         sourceFile `yaml:"grsolar"`
 		BauhausStore    struct {
 			Enabled    bool     `yaml:"enabled"`
 			ProductIDs []string `yaml:"productIDs"`
@@ -308,6 +332,19 @@ func Load(path string) (*Config, error) {
 		HeizungBilligerEnabled: fc.Sources.HeizungBilliger.Enabled,
 		HeizungBilligerURLs:    fc.Sources.HeizungBilliger.URLs,
 
+		TecedoEnabled:      fc.Sources.Tecedo.Enabled,
+		TecedoURLs:         fc.Sources.Tecedo.URLs,
+		MediaDealEnabled:   fc.Sources.MediaDeal.Enabled,
+		MediaDealURLs:      fc.Sources.MediaDeal.URLs,
+		KlimafyEnabled:     fc.Sources.Klimafy.Enabled,
+		KlimafyURLs:        fc.Sources.Klimafy.URLs,
+		EntratekEnabled:    fc.Sources.Entratek.Enabled,
+		EntratekURLs:       fc.Sources.Entratek.URLs,
+		BobsElektroEnabled: fc.Sources.BobsElektro.Enabled,
+		BobsElektroURLs:    fc.Sources.BobsElektro.URLs,
+		GrSolarEnabled:     fc.Sources.GrSolar.Enabled,
+		GrSolarURLs:        fc.Sources.GrSolar.URLs,
+
 		BauhausStoreEnabled:    fc.Sources.BauhausStore.Enabled,
 		BauhausStoreProductIDs: fc.Sources.BauhausStore.ProductIDs,
 		BauhausStoreIDs:        fc.Sources.BauhausStore.StoreIDs,
@@ -330,6 +367,7 @@ func (c *Config) validate() error {
 	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.SolarProfiEnabled ||
 		c.GalaxusEnabled || c.Solario24Enabled || c.EvolarShopEnabled || c.BueromarktEnabled || c.ExpertEnabled || c.ProsatechEnabled || c.TadoEnabled || c.SolarHandel24Enabled || c.SchwabKlimaEnabled || c.GrzEnabled || c.SelfioEnabled || c.KlimaVertriebEnabled ||
 		c.GroupSumiEnabled || c.WeinmannSchanzEnabled || c.TalentKingEnabled || c.HeizungBilligerEnabled ||
+		c.TecedoEnabled || c.MediaDealEnabled || c.KlimafyEnabled || c.EntratekEnabled || c.BobsElektroEnabled || c.GrSolarEnabled ||
 		c.BauhausStoreEnabled
 	if !anySource {
 		return fmt.Errorf("at least one source must be enabled")

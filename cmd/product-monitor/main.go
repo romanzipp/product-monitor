@@ -142,6 +142,24 @@ func main() {
 		// Behind Cloudflare (JA3 wall): route through FlareSolverr.
 		sources = append(sources, source.NewHeizungBilliger(httpClient, flareSolverr, cfg.HeizungBilligerURLs))
 	}
+	if cfg.TecedoEnabled {
+		sources = append(sources, source.NewTecedo(httpClient, nil, cfg.TecedoURLs))
+	}
+	if cfg.MediaDealEnabled {
+		sources = append(sources, source.NewMediaDeal(httpClient, nil, cfg.MediaDealURLs))
+	}
+	if cfg.KlimafyEnabled {
+		sources = append(sources, source.NewKlimafy(httpClient, nil, cfg.KlimafyURLs))
+	}
+	if cfg.EntratekEnabled {
+		sources = append(sources, source.NewEntratek(httpClient, nil, cfg.EntratekURLs))
+	}
+	if cfg.BobsElektroEnabled {
+		sources = append(sources, source.NewBobsElektro(httpClient, nil, cfg.BobsElektroURLs))
+	}
+	if cfg.GrSolarEnabled {
+		sources = append(sources, source.NewGrSolar(httpClient, nil, cfg.GrSolarURLs))
+	}
 	if cfg.BauhausStoreEnabled {
 		if flareSolverr == nil {
 			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")

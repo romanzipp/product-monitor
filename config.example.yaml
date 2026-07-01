@@ -152,6 +152,34 @@ sources:
     enabled: true
     urls:
       - https://heizung-billiger.de/736321-midea-mobiles-split-klimagerat-porta-split-r32-35kw-heizen-kuhlen-230v-midea-10002085-4048164116478.html
+  tecedo:
+    enabled: true
+    urls:
+      - https://www.tecedo.de/midea-porta-split-klimageraet-203567.html
+  # Shopware 5: uses LimitedAvailability ("Lieferzeit anfragen") for out of stock,
+  # so only InStock counts as available.
+  mediadeal:
+    enabled: true
+    urls:
+      - https://www.mediadeal.de/haus-garten/haustechnik/klimageraete/19421/midea-porta-split-klimageraet-3.500w
+  klimafy:
+    enabled: true
+    urls:
+      - https://klimafy.de/a/midea-portasplit-klimageraet-diy-mobile-split-klimaanlage-12k-eek-a-a/9894907/
+  entratek:
+    enabled: true
+    urls:
+      - https://www.entratek-shop.de/p/midea-portasplit-klimaanlage-mobile-waermepumpe-kuehlen-a-heizen-a-12000-btu-3-5kw
+  # Gambio, no schema.org: reads the delivery badge (green/yellow = orderable,
+  # red = "nicht mehr lieferbar").
+  bobselektro:
+    enabled: true
+    urls:
+      - https://www.bobselektro.de/kleingeraete/mobile-klimaanlagen/midea-portasplit-3-5-kw-mobile-split-klimaanlage.html
+  grsolar:
+    enabled: true
+    urls:
+      - https://gr-solar.de/produkt/midea-portasplit-klimaanlage-35-kw
   # Bauhaus store pickup availability, checked per product×store (needs
   # flaresolverr; product 31934233 = PortaSplit, store 589 = Frankfurt).
   bauhausStore:
