@@ -58,6 +58,25 @@ func parsePrice(html string) *float64 {
 	return nil
 }
 
+// shopifyCentsRe matches Shopify's integer-cents price (e.g. "price":142857),
+// which the embedded product JSON exposes before the JSON-LD euro price. Only the
+// unquoted integer form matches: quoted ("1428.57") and object ({"amount":…}) and
+// decimal (1549.0) forms are skipped.
+var shopifyCentsRe = regexp.MustCompile(`"price":(\d{3,})[,}]`)
+
+// shopifyPrice reads a Shopify product page price. It prefers the integer-cents
+// value (divided by 100) because the generic parser would otherwise pick up those
+// cents as whole euros; it falls back to the schema.org price.
+func shopifyPrice(html string) *float64 {
+	if m := shopifyCentsRe.FindStringSubmatch(html); m != nil {
+		if cents, err := strconv.Atoi(m[1]); err == nil && cents > 0 {
+			v := float64(cents) / 100
+			return &v
+		}
+	}
+	return parsePrice(html)
+}
+
 // parseAmount parses a price string, normalising German formats like "2.949,99"
 // and "799,00", and returns nil for a non-positive or invalid value.
 func parseAmount(raw string) *float64 {

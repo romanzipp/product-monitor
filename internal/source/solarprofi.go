@@ -19,6 +19,12 @@ func solarprofiToken(url string) string {
 	return ""
 }
 
+// solarProfiOutOfStock adds the shop's explicit unavailable text: the microdata
+// availability is a constant LimitedAvailability even when the product is not
+// orderable ("Dieser Artikel steht derzeit nicht zur Verfügung!"), so that text is
+// the authoritative negative signal.
+var solarProfiOutOfStock = append([]string{"nicht zur verfügung"}, schemaOutOfStock...)
+
 // SolarProfiSource checks solarprofi-24.de product pages. The shop is not
 // anti-bot protected and exposes schema.org microdata availability, so it is
 // fetched directly (no FlareSolverr needed).
@@ -39,7 +45,7 @@ func NewSolarProfi(client *http.Client, fs *FlareSolverr, urls []string) *SolarP
 			channel:    model.ChannelOnline,
 			tokenFn:    solarprofiToken,
 			inStock:    schemaInStock,
-			outOfStock: schemaOutOfStock,
+			outOfStock: solarProfiOutOfStock,
 			priceFn:    parsePrice,
 		},
 	}

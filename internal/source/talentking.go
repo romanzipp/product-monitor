@@ -13,5 +13,6 @@ type TalentKingSource struct {
 func NewTalentKing(client *http.Client, fs *FlareSolverr, urls []string) *TalentKingSource {
 	wc := newSchemaCheck("talentking", client, fs, urls, "Talent King")
 	wc.preOrder = append(wc.preOrder, preOrderTextMarkers...)
+	wc.priceFn = shopifyPrice
 	return &TalentKingSource{wc}
 }

@@ -19,5 +19,6 @@ type TadoSource struct {
 func NewTado(client *http.Client, fs *FlareSolverr, urls []string) *TadoSource {
 	wc := newSchemaCheck("tado", client, fs, urls, "tado")
 	wc.preOrder = append(wc.preOrder, preOrderTextMarkers...)
+	wc.priceFn = shopifyPrice
 	return &TadoSource{wc}
 }

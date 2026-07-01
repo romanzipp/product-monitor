@@ -69,6 +69,27 @@ func TestSchemaPreOrder(t *testing.T) {
 	}
 }
 
+func TestShopifyPrice(t *testing.T) {
+	cases := []struct {
+		name string
+		html string
+		want float64
+	}{
+		// Cents integer must win over the euro JSON-LD price that appears later.
+		{"cents before jsonld", `"price":142857,"foo":1 ... "price":"1428.57","pricecurrency":"eur"`, 1428.57},
+		{"cents in brace", `{"available":true,"price":99000}`, 990.00},
+		{"falls back to schema price", `"pricecurrency":"eur" <meta itemprop="price" content="1549.00" />`, 1549.00},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := shopifyPrice(tc.html)
+			if got == nil || *got != tc.want {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func newPageServer(t *testing.T, html string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

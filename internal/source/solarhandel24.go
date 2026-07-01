@@ -14,5 +14,6 @@ type SolarHandel24Source struct {
 func NewSolarHandel24(client *http.Client, fs *FlareSolverr, urls []string) *SolarHandel24Source {
 	wc := newSchemaCheck("solarhandel24", client, fs, urls, "Solarhandel24")
 	wc.preOrder = append(wc.preOrder, preOrderTextMarkers...)
+	wc.priceFn = shopifyPrice
 	return &SolarHandel24Source{wc}
 }
