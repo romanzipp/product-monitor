@@ -195,11 +195,11 @@ type fileConfig struct {
 			URLs    []string `yaml:"urls"`
 			StoreID string   `yaml:"storeId"`
 		} `yaml:"expert"`
-		Prosatech     sourceFile `yaml:"prosatech"`
-		Tado          sourceFile `yaml:"tado"`
-		SolarHandel24 sourceFile `yaml:"solarhandel24"`
-		SchwabKlima   sourceFile `yaml:"schwabklima"`
-		Grz           sourceFile `yaml:"grz"`
+		Prosatech       sourceFile `yaml:"prosatech"`
+		Tado            sourceFile `yaml:"tado"`
+		SolarHandel24   sourceFile `yaml:"solarhandel24"`
+		SchwabKlima     sourceFile `yaml:"schwabklima"`
+		Grz             sourceFile `yaml:"grz"`
 		Selfio          sourceFile `yaml:"selfio"`
 		KlimaVertrieb   sourceFile `yaml:"klimavertrieb"`
 		GroupSumi       sourceFile `yaml:"groupsumi"`
