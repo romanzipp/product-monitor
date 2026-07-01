@@ -66,13 +66,13 @@ The service exposes Prometheus metrics at `/metrics` (listen address
 
 | Metric | Type | Description |
 | --- | --- | --- |
-| `portasplit_source_up` | gauge | last check succeeded (1) or failed (0) |
-| `portasplit_source_last_check_timestamp_seconds` | gauge | unix time of last check |
-| `portasplit_source_available` | gauge | in-stock offerings from last check |
-| `portasplit_source_stock` | gauge | total units from last check |
-| `portasplit_source_min_price_euros` | gauge | lowest known price (when available) |
-| `portasplit_source_checks_total` | counter | checks by `result` (`success`/`error`) |
-| `portasplit_source_notifications_total` | counter | notifications sent |
+| `product_source_up` | gauge | last check succeeded (1) or failed (0) |
+| `product_source_last_check_timestamp_seconds` | gauge | unix time of last check |
+| `product_source_available` | gauge | in-stock offerings from last check |
+| `product_source_stock` | gauge | total units from last check |
+| `product_source_min_price_euros` | gauge | lowest known price (when available) |
+| `product_source_checks_total` | counter | checks by `result` (`success`/`error`) |
+| `product_source_notifications_total` | counter | notifications sent |
 
 The Helm chart ships a headless `-metrics` Service and a `ServiceMonitor`
 (`serviceMonitor.enabled`, default on) so the Prometheus Operator scrapes it

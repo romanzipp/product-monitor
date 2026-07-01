@@ -91,42 +91,42 @@ func (m *Metrics) write(w io.Writer) {
 	}
 	sort.Strings(names)
 
-	gauge(w, "portasplit_source_up", "Whether the last check for a source succeeded (1) or failed (0)")
+	gauge(w, "product_source_up", "Whether the last check for a source succeeded (1) or failed (0)")
 	for _, n := range names {
-		sample(w, "portasplit_source_up", n, float64(m.src[n].success))
+		sample(w, "product_source_up", n, float64(m.src[n].success))
 	}
 
-	gauge(w, "portasplit_source_last_check_timestamp_seconds", "Unix time of the last check per source")
+	gauge(w, "product_source_last_check_timestamp_seconds", "Unix time of the last check per source")
 	for _, n := range names {
-		sample(w, "portasplit_source_last_check_timestamp_seconds", n, float64(m.src[n].lastCheck))
+		sample(w, "product_source_last_check_timestamp_seconds", n, float64(m.src[n].lastCheck))
 	}
 
-	gauge(w, "portasplit_source_available", "Number of in-stock offerings from the last check")
+	gauge(w, "product_source_available", "Number of in-stock offerings from the last check")
 	for _, n := range names {
-		sample(w, "portasplit_source_available", n, float64(m.src[n].available))
+		sample(w, "product_source_available", n, float64(m.src[n].available))
 	}
 
-	gauge(w, "portasplit_source_stock", "Total units in stock from the last check")
+	gauge(w, "product_source_stock", "Total units in stock from the last check")
 	for _, n := range names {
-		sample(w, "portasplit_source_stock", n, float64(m.src[n].stock))
+		sample(w, "product_source_stock", n, float64(m.src[n].stock))
 	}
 
-	gauge(w, "portasplit_source_min_price_euros", "Lowest known price from the last check, when available")
+	gauge(w, "product_source_min_price_euros", "Lowest known price from the last check, when available")
 	for _, n := range names {
 		if m.src[n].hasPrice {
-			sample(w, "portasplit_source_min_price_euros", n, m.src[n].minPrice)
+			sample(w, "product_source_min_price_euros", n, m.src[n].minPrice)
 		}
 	}
 
-	counter(w, "portasplit_source_checks_total", "Total source checks by result")
+	counter(w, "product_source_checks_total", "Total source checks by result")
 	for _, n := range names {
-		sampleLabels(w, "portasplit_source_checks_total", n, "success", float64(m.src[n].checksSuccess))
-		sampleLabels(w, "portasplit_source_checks_total", n, "error", float64(m.src[n].checksError))
+		sampleLabels(w, "product_source_checks_total", n, "success", float64(m.src[n].checksSuccess))
+		sampleLabels(w, "product_source_checks_total", n, "error", float64(m.src[n].checksError))
 	}
 
-	counter(w, "portasplit_source_notifications_total", "Total notifications sent per source")
+	counter(w, "product_source_notifications_total", "Total notifications sent per source")
 	for _, n := range names {
-		sample(w, "portasplit_source_notifications_total", n, float64(m.src[n].notifications))
+		sample(w, "product_source_notifications_total", n, float64(m.src[n].notifications))
 	}
 }
 
