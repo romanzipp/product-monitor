@@ -91,6 +91,44 @@ func main() {
 		// Not anti-bot protected; fetch directly (no FlareSolverr).
 		sources = append(sources, source.NewSolarProfi(httpClient, nil, cfg.SolarProfiURLs))
 	}
+	if cfg.GalaxusEnabled {
+		// Akamai + CAPTCHA: only reachable through FlareSolverr.
+		sources = append(sources, source.NewGalaxus(httpClient, flareSolverr, cfg.GalaxusURLs))
+	}
+	if cfg.Solario24Enabled {
+		sources = append(sources, source.NewSolario24(httpClient, nil, cfg.Solario24URLs))
+	}
+	if cfg.EvolarShopEnabled {
+		sources = append(sources, source.NewEvolarShop(httpClient, nil, cfg.EvolarShopURLs))
+	}
+	if cfg.BueromarktEnabled {
+		// Behind Imperva/Incapsula: route through FlareSolverr.
+		sources = append(sources, source.NewBueromarkt(httpClient, flareSolverr, cfg.BueromarktURLs))
+	}
+	if cfg.ExpertEnabled {
+		sources = append(sources, source.NewExpert(httpClient, cfg.ExpertURLs, cfg.ExpertStoreID))
+	}
+	if cfg.ProsatechEnabled {
+		sources = append(sources, source.NewProsatech(httpClient, nil, cfg.ProsatechURLs))
+	}
+	if cfg.TadoEnabled {
+		sources = append(sources, source.NewTado(httpClient, nil, cfg.TadoURLs))
+	}
+	if cfg.SolarHandel24Enabled {
+		sources = append(sources, source.NewSolarHandel24(httpClient, nil, cfg.SolarHandel24URLs))
+	}
+	if cfg.SchwabKlimaEnabled {
+		sources = append(sources, source.NewSchwabKlima(httpClient, nil, cfg.SchwabKlimaURLs))
+	}
+	if cfg.GrzEnabled {
+		sources = append(sources, source.NewGrz(httpClient, nil, cfg.GrzURLs))
+	}
+	if cfg.SelfioEnabled {
+		sources = append(sources, source.NewSelfio(httpClient, nil, cfg.SelfioURLs))
+	}
+	if cfg.KlimaVertriebEnabled {
+		sources = append(sources, source.NewKlimaVertrieb(httpClient, nil, cfg.KlimaVertriebURLs))
+	}
 	if cfg.BauhausStoreEnabled {
 		if flareSolverr == nil {
 			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")

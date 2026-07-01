@@ -36,6 +36,39 @@ func TestParsePrice(t *testing.T) {
 	}
 }
 
+func TestSchemaPreOrder(t *testing.T) {
+	const token = mmToken
+	cases := []struct {
+		name      string
+		html      string
+		available bool
+		preOrder  bool
+	}{
+		{"in stock, not preorder", token + ` schema.org/InStock`, true, false},
+		{"preorder flagged", token + ` schema.org/PreOrder`, true, true},
+		{"backorder flagged", token + ` schema.org/BackOrder`, true, true},
+		{"out of stock wins", token + ` schema.org/PreOrder schema.org/OutOfStock`, false, false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := newPageServer(t, tc.html)
+			defer srv.Close()
+
+			src := NewMediaMarkt(srv.Client(), nil, []string{srv.URL + "/p_" + token + ".html"})
+			got, err := src.Check(context.Background())
+			if err != nil {
+				t.Fatalf("Check: %v", err)
+			}
+			if available := len(got) > 0; available != tc.available {
+				t.Fatalf("available=%v, want %v", available, tc.available)
+			}
+			if tc.available && got[0].PreOrder != tc.preOrder {
+				t.Errorf("preOrder=%v, want %v", got[0].PreOrder, tc.preOrder)
+			}
+		})
+	}
+}
+
 func newPageServer(t *testing.T, html string) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -53,6 +86,7 @@ func TestMediaMarktAvailability(t *testing.T) {
 		available bool
 	}{
 		{"in stock", `<script>{"productId":"142245268","offers":{"availability":"https://schema.org/InStock"}}</script>`, true},
+		{"in stock escaped slash", "142245268 " + `{"availability":"https:\/\/schema.org\/InStock"}`, true},
 		{"out of stock", `<script>{"productId":"142245268","offers":{"availability":"https://schema.org/OutOfStock"}}</script>`, false},
 		{"out wins over in", `142245268 schema.org/InStock schema.org/OutOfStock`, false},
 		{"no markers", `<div>142245268 but nothing structured</div>`, false},

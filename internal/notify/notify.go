@@ -94,6 +94,9 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 
 func formatMessage(a model.Availability) string {
 	var b strings.Builder
+	if a.PreOrder {
+		fmt.Fprintf(&b, "⏳ Vorbestellung / lange Lieferzeit\n")
+	}
 	if a.Price != nil {
 		fmt.Fprintf(&b, "Price: %.2f €\n", *a.Price)
 	} else {

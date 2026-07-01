@@ -23,6 +23,7 @@ type Availability struct {
 	Channel     Channel
 	PLZ         string // empty for online
 	Targeted    bool   // source already targets a specific store; skip local filter
+	PreOrder    bool   // orderable but pre-order / long delivery, not immediately in stock
 	Key         string // stable dedup key
 }
 

@@ -35,17 +35,38 @@ products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
 | `hornbach` | Hornbach product pages | `urls` | online |
 | `toom` | toom product pages | `urls` | online |
 | `solarprofi` | solarprofi-24.de product pages | `urls` | online |
+| `galaxus` | galaxus.de product pages (Akamai/CAPTCHA, needs FlareSolverr) | `urls` | online |
+| `solario24` | solario24.com product pages | `urls` | online |
+| `evolarshop` | evolarshop.de product pages | `urls` | online |
+| `bueromarkt` | bueromarkt-ag.de pages (Incapsula, prefers FlareSolverr) | `urls` | online |
+| `expert` | expert.de price/stock JSON API | `urls` + `storeId` | online |
+| `prosatech` | prosatech.de product pages | `urls` | online |
+| `tado` | shop.tado.com product pages | `urls` | online |
+| `solarhandel24` | solarhandel24.de product pages | `urls` | online |
+| `schwabklima` | schwab-klima.de product pages | `urls` | online |
+| `grz` | grz-haustechnik.de pages, delivery lead time | `urls` | online |
+| `selfio` | selfio.de product pages | `urls` | online |
+| `klimavertrieb` | klima-vertrieb.de product pages | `urls` | online |
 | `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `storeIDs` | in-store |
 
 Online retailers each have their own source (direct product-page check); the
 `braucheklima` feed contributes physical-store stock only, so online stores are
 not double-counted. Most product-page sources read the `schema.org` JSON-LD
-availability; Amazon has no such marker, so its buybox add-to-cart button is used
-and it reports no price.
+availability. A few need custom handling: Amazon uses its buybox add-to-cart
+button, `expert` calls a price/stock JSON API, `grz` reads the delivery lead time,
+and `bueromarkt` reads its "sofort lieferbar" / "derzeit nicht verfügbar" status.
 
 `bauhaus-store` checks a Bauhaus store's pickup stock via the
 `/api/purchasability` endpoint. Its result is store-targeted, so it bypasses the
 `localPLZPrefixes` filter.
+
+### Pre-orders
+
+A result can be flagged as a **pre-order** when it is orderable but not immediately
+in stock (schema.org `PreOrder`/`BackOrder`, a German "Vorbestellung" note, expert's
+`PREORDER`/`ORDER_IN_ADVANCE` state, or a long delivery lead time such as
+grz-haustechnik's `Lieferzeit N Werktage`). The Pushover message then carries a
+"Vorbestellung / lange Lieferzeit" line so a pre-order is not mistaken for stock on hand.
 
 ### Online vs in-store
 

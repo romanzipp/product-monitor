@@ -13,8 +13,12 @@ import (
 
 // JSON-LD schema.org availability tokens. The structured Offer availability is
 // far more reliable than visible text, which is polluted by recommended products.
-var schemaInStock = []string{"schema.org/instock", "schema.org/limitedavailability", "schema.org/preorder"}
+var schemaInStock = []string{"schema.org/instock", "schema.org/limitedavailability"}
 var schemaOutOfStock = []string{"schema.org/outofstock", "schema.org/soldout", "schema.org/discontinued"}
+
+// schemaPreOrder marks an offer as orderable but not immediately in stock. It
+// counts as available and additionally flags the result as a pre-order.
+var schemaPreOrder = []string{"schema.org/preorder", "schema.org/backorder"}
 
 var digitRunRe = regexp.MustCompile(`[0-9]{6,}`)
 
@@ -32,6 +36,7 @@ func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, urls []s
 		tokenFn:    productToken,
 		inStock:    schemaInStock,
 		outOfStock: schemaOutOfStock,
+		preOrder:   schemaPreOrder,
 		priceFn:    parsePrice,
 	}
 }
@@ -97,6 +102,7 @@ type webCheck struct {
 	tokenFn    func(string) string // required page token per URL (empty = no guard)
 	inStock    []string
 	outOfStock []string
+	preOrder   []string              // markers that mean "orderable but pre-order/long delivery"
 	priceFn    func(string) *float64 // extracts price from the page (nil = no price)
 }
 
@@ -137,6 +143,9 @@ func (s *webCheck) checkOne(ctx context.Context, url string) (*model.Availabilit
 	}
 
 	html := strings.ToLower(string(body))
+	// Normalise JSON-escaped slashes so a JSON-LD "schema.org\/InStock" (Magento
+	// and others escape the slash) matches the same markers as plain HTML.
+	html = strings.ReplaceAll(html, "\\/", "/")
 
 	// Soft-404 guard: delisted products return a 200 page full of OTHER in-stock
 	// items. If this product's id/EAN is absent, it is not really available.
@@ -159,6 +168,15 @@ func (s *webCheck) checkOne(ctx context.Context, url string) (*model.Availabilit
 			break
 		}
 	}
+	// Pre-order markers also count as available, and additionally flag the result.
+	preOrder := false
+	for _, marker := range s.preOrder {
+		if strings.Contains(html, strings.ToLower(marker)) {
+			available = true
+			preOrder = true
+			break
+		}
+	}
 	if !available {
 		return nil, nil
 	}
@@ -176,6 +194,7 @@ func (s *webCheck) checkOne(ctx context.Context, url string) (*model.Availabilit
 		URL:         url,
 		Location:    location,
 		Channel:     s.channel,
+		PreOrder:    preOrder,
 		Key:         s.name + ":" + url,
 	}
 	if s.priceFn != nil {

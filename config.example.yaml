@@ -77,6 +77,62 @@ sources:
     enabled: true
     urls:
       - https://shop.solarprofi-24.de/haustechnik/7212/midea-mobiles-split-klimageraet-porta-split-3-5-kw-r-32-raumklimageraet-4-in-1-komfort
+  # Galaxus is behind Akamai + CAPTCHA; it only works through flaresolverr and may
+  # still be blocked. Availability read from schema.org JSON-LD.
+  galaxus:
+    enabled: true
+    urls:
+      - https://www.galaxus.de/de/s2/product/midea-porta-split-42-m-12000-btuh-klimaanlage-40851329
+  solario24:
+    enabled: true
+    urls:
+      - https://www.solario24.com/de/produkt/midea-portasplit-cool-mobile-split-klimaanlage-235-kw-8-000-btu-ohne-feste-installation-a/
+  evolarshop:
+    enabled: true
+    urls:
+      - https://www.evolarshop.de/midea-portasplit-mobile-split-airco-12000btu-kuhlen-heizen-zweite-chance-1
+  # Büromarkt AG is behind Imperva/Incapsula; route through flaresolverr.
+  bueromarkt:
+    enabled: true
+    urls:
+      - https://www.bueromarkt-ag.de/klimageraet_midea_portasplit_12000_btuh,p-11647.html
+  # expert.de reads its price/stock JSON API. storeId can be any valid expert store
+  # id; the online availability it returns is store-independent.
+  expert:
+    enabled: true
+    storeId: e_2879130
+    urls:
+      - https://www.expert.de/shop/unsere-produkte/haushalt-kuche/wohnklima/klimagerate/32750011559-portasplit-mobile-split-klimaanlage.html
+  prosatech:
+    enabled: true
+    urls:
+      - https://prosatech.de/Mobile-Klimaanlage-Midea-PortaSplit-35kw
+  tado:
+    enabled: true
+    urls:
+      - https://shop.tado.com/products/midea-portasplit-mobile-split-air-conditioner-3-5-kw-tado-smart-ac-control-v3
+  solarhandel24:
+    enabled: true
+    urls:
+      - https://solarhandel24.de/products/midea-portasplit-klimaanlage
+  schwabklima:
+    enabled: true
+    urls:
+      - https://www.schwab-klima.de/product-page/midea-portasplit-mobiles-klimager%C3%A4t-3-5kw
+  # grz-haustechnik signals stock via delivery lead time ("Lieferzeit N Werktage");
+  # a long lead time is reported as a pre-order.
+  grz:
+    enabled: true
+    urls:
+      - https://grz-haustechnik.de/klima/mobile-klimageraete/1768/mobiles-split-klimageraet-r-32-midea-porta-split-3-5kw
+  selfio:
+    enabled: true
+    urls:
+      - https://www.selfio.de/produkte/midea-mobile-klimaanlage-portasplit-fuer-raeume-bis-zu-42-m2
+  klimavertrieb:
+    enabled: true
+    urls:
+      - https://klima-vertrieb.de/klima/mobile-klimaanlagen/midea/819/midea-portasplit-mobiles-split-klimageraet-waermepumpe-3-5-kw-a
   # Bauhaus store pickup availability, checked per product×store (needs
   # flaresolverr; product 31934233 = PortaSplit, store 589 = Frankfurt).
   bauhausStore:

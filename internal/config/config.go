@@ -63,6 +63,43 @@ type Config struct {
 	SolarProfiEnabled bool
 	SolarProfiURLs    []string
 
+	GalaxusEnabled bool
+	GalaxusURLs    []string
+
+	Solario24Enabled bool
+	Solario24URLs    []string
+
+	EvolarShopEnabled bool
+	EvolarShopURLs    []string
+
+	BueromarktEnabled bool
+	BueromarktURLs    []string
+
+	ExpertEnabled bool
+	ExpertURLs    []string
+	ExpertStoreID string
+
+	ProsatechEnabled bool
+	ProsatechURLs    []string
+
+	TadoEnabled bool
+	TadoURLs    []string
+
+	SolarHandel24Enabled bool
+	SolarHandel24URLs    []string
+
+	SchwabKlimaEnabled bool
+	SchwabKlimaURLs    []string
+
+	GrzEnabled bool
+	GrzURLs    []string
+
+	SelfioEnabled bool
+	SelfioURLs    []string
+
+	KlimaVertriebEnabled bool
+	KlimaVertriebURLs    []string
+
 	BauhausStoreEnabled    bool
 	BauhausStoreProductIDs []string
 	BauhausStoreIDs        []string
@@ -128,16 +165,32 @@ type fileConfig struct {
 			Enabled    bool     `yaml:"enabled"`
 			ProductIDs []string `yaml:"productIDs"`
 		} `yaml:"obi"`
-		MediaMarkt   sourceFile `yaml:"mediamarkt"`
-		Euronics     sourceFile `yaml:"euronics"`
-		Globus       sourceFile `yaml:"globus"`
-		Amazon       sourceFile `yaml:"amazon"`
-		Bauhaus      sourceFile `yaml:"bauhaus"`
-		Hagebau      sourceFile `yaml:"hagebau"`
-		Hornbach     sourceFile `yaml:"hornbach"`
-		Toom         sourceFile `yaml:"toom"`
-		SolarProfi   sourceFile `yaml:"solarprofi"`
-		BauhausStore struct {
+		MediaMarkt sourceFile `yaml:"mediamarkt"`
+		Euronics   sourceFile `yaml:"euronics"`
+		Globus     sourceFile `yaml:"globus"`
+		Amazon     sourceFile `yaml:"amazon"`
+		Bauhaus    sourceFile `yaml:"bauhaus"`
+		Hagebau    sourceFile `yaml:"hagebau"`
+		Hornbach   sourceFile `yaml:"hornbach"`
+		Toom       sourceFile `yaml:"toom"`
+		SolarProfi sourceFile `yaml:"solarprofi"`
+		Galaxus    sourceFile `yaml:"galaxus"`
+		Solario24  sourceFile `yaml:"solario24"`
+		EvolarShop sourceFile `yaml:"evolarshop"`
+		Bueromarkt sourceFile `yaml:"bueromarkt"`
+		Expert     struct {
+			Enabled bool     `yaml:"enabled"`
+			URLs    []string `yaml:"urls"`
+			StoreID string   `yaml:"storeId"`
+		} `yaml:"expert"`
+		Prosatech     sourceFile `yaml:"prosatech"`
+		Tado          sourceFile `yaml:"tado"`
+		SolarHandel24 sourceFile `yaml:"solarhandel24"`
+		SchwabKlima   sourceFile `yaml:"schwabklima"`
+		Grz           sourceFile `yaml:"grz"`
+		Selfio        sourceFile `yaml:"selfio"`
+		KlimaVertrieb sourceFile `yaml:"klimavertrieb"`
+		BauhausStore  struct {
 			Enabled    bool     `yaml:"enabled"`
 			ProductIDs []string `yaml:"productIDs"`
 			StoreIDs   []string `yaml:"storeIDs"`
@@ -204,6 +257,32 @@ func Load(path string) (*Config, error) {
 		SolarProfiEnabled: fc.Sources.SolarProfi.Enabled,
 		SolarProfiURLs:    fc.Sources.SolarProfi.URLs,
 
+		GalaxusEnabled:       fc.Sources.Galaxus.Enabled,
+		GalaxusURLs:          fc.Sources.Galaxus.URLs,
+		Solario24Enabled:     fc.Sources.Solario24.Enabled,
+		Solario24URLs:        fc.Sources.Solario24.URLs,
+		EvolarShopEnabled:    fc.Sources.EvolarShop.Enabled,
+		EvolarShopURLs:       fc.Sources.EvolarShop.URLs,
+		BueromarktEnabled:    fc.Sources.Bueromarkt.Enabled,
+		BueromarktURLs:       fc.Sources.Bueromarkt.URLs,
+		ExpertEnabled:        fc.Sources.Expert.Enabled,
+		ExpertURLs:           fc.Sources.Expert.URLs,
+		ExpertStoreID:        fc.Sources.Expert.StoreID,
+		ProsatechEnabled:     fc.Sources.Prosatech.Enabled,
+		ProsatechURLs:        fc.Sources.Prosatech.URLs,
+		TadoEnabled:          fc.Sources.Tado.Enabled,
+		TadoURLs:             fc.Sources.Tado.URLs,
+		SolarHandel24Enabled: fc.Sources.SolarHandel24.Enabled,
+		SolarHandel24URLs:    fc.Sources.SolarHandel24.URLs,
+		SchwabKlimaEnabled:   fc.Sources.SchwabKlima.Enabled,
+		SchwabKlimaURLs:      fc.Sources.SchwabKlima.URLs,
+		GrzEnabled:           fc.Sources.Grz.Enabled,
+		GrzURLs:              fc.Sources.Grz.URLs,
+		SelfioEnabled:        fc.Sources.Selfio.Enabled,
+		SelfioURLs:           fc.Sources.Selfio.URLs,
+		KlimaVertriebEnabled: fc.Sources.KlimaVertrieb.Enabled,
+		KlimaVertriebURLs:    fc.Sources.KlimaVertrieb.URLs,
+
 		BauhausStoreEnabled:    fc.Sources.BauhausStore.Enabled,
 		BauhausStoreProductIDs: fc.Sources.BauhausStore.ProductIDs,
 		BauhausStoreIDs:        fc.Sources.BauhausStore.StoreIDs,
@@ -223,7 +302,9 @@ func (c *Config) validate() error {
 	if c.PushoverToken == "" || c.PushoverUser == "" {
 		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER environment variables are required")
 	}
-	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.SolarProfiEnabled || c.BauhausStoreEnabled
+	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.SolarProfiEnabled ||
+		c.GalaxusEnabled || c.Solario24Enabled || c.EvolarShopEnabled || c.BueromarktEnabled || c.ExpertEnabled || c.ProsatechEnabled || c.TadoEnabled || c.SolarHandel24Enabled || c.SchwabKlimaEnabled || c.GrzEnabled || c.SelfioEnabled || c.KlimaVertriebEnabled ||
+		c.BauhausStoreEnabled
 	if !anySource {
 		return fmt.Errorf("at least one source must be enabled")
 	}
