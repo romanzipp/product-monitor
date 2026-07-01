@@ -33,7 +33,6 @@ COPY --from=builder /out/portasplit-monitor /app/portasplit-monitor
 # SQLite database lives on a mounted volume (see Helm chart / -v /data). The dir
 # is nonroot-owned so a freshly created volume is writable by the app user.
 COPY --from=builder --chown=nonroot:nonroot /data /data
-ENV DB_PATH=/data/portasplit-monitor.db
 VOLUME ["/data"]
 
 USER nonroot:nonroot

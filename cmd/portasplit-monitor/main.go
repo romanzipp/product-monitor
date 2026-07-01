@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log/slog"
 	"net/http"
 	"os"
@@ -20,7 +21,10 @@ import (
 )
 
 func main() {
-	cfg, err := config.Load()
+	configPath := flag.String("config", "config.yaml", "path to the YAML config file")
+	flag.Parse()
+
+	cfg, err := config.Load(*configPath)
 	if err != nil {
 		slog.New(slog.NewTextHandler(os.Stderr, nil)).Error("config error", "err", err)
 		os.Exit(2)
@@ -85,7 +89,7 @@ func main() {
 	}
 	if cfg.BauhausStoreEnabled {
 		if flareSolverr == nil {
-			log.Warn("bauhaus-store source needs FLARESOLVERR_URL, skipping")
+			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")
 		} else {
 			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreID, cfg.BauhausStoreName))
 		}

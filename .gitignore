@@ -10,6 +10,9 @@
 # local env / secrets
 .env
 
+# local config (copy from config.example.yaml)
+/config.yaml
+
 # editor / OS noise
 .DS_Store
 *.swp

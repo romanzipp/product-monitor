@@ -14,40 +14,50 @@ fullnameOverride: portasplit-monitor
 #     - name: zot-pull-secret
 imagePullSecrets: []
 
-# Non-secret runtime config. Matches the env vars in .env.example.
-# Credentials (PUSHOVER_TOKEN, PUSHOVER_USER) come from envFromSecret.
-env:
-  CHECK_INTERVAL: 5m
-  HTTP_TIMEOUT: 30s
-  DB_PATH: /data/portasplit-monitor.db
-  PRICE_MAX: "0"
-  BRAUCHEKLIMA_ENABLED: "true"
-  BRAUCHEKLIMA_PRODUCT: "Midea Portasplit"
-  OBI_ENABLED: "true"
-  OBI_PRODUCT_ID: "8620890"
-  MEDIAMARKT_ENABLED: "true"
-  EURONICS_ENABLED: "true"
-  GLOBUS_ENABLED: "true"
-  AMAZON_ENABLED: "true"
-  BAUHAUS_ENABLED: "true"
-  HAGEBAU_ENABLED: "true"
-  HORNBACH_ENABLED: "true"
-  TOOM_ENABLED: "true"
-  # Bauhaus store pickup availability (store 589 = Frankfurt) via purchasability API.
-  BAUHAUS_STORE_ENABLED: "true"
-  BAUHAUS_STORE_ID: "589"
-  BAUHAUS_STORE_NAME: "Bauhaus Frankfurt"
-  # Home postal code: the single location reference. OBI queries against it and
-  # the in-store filter prefix defaults to its region (first two digits).
-  LOCAL_PLZ: "36037"
-  # In-store results are kept only for stores whose PLZ starts with one of these
-  # comma-separated prefixes. Defaults to the LOCAL_PLZ region. Online unfiltered.
-  LOCAL_PLZ_PREFIXES: "36"
+# Non-secret runtime config, rendered verbatim into config.yaml (a ConfigMap
+# mounted at /etc/portasplit-monitor/config.yaml). Secrets (PUSHOVER_TOKEN,
+# PUSHOVER_USER) come from envFromSecret. See config.example.yaml for the schema.
+# flaresolverr.url points at the in-cluster FlareSolverr Service below.
+config:
+  checkInterval: 5m
+  httpTimeout: 30s
+  dbPath: /data/portasplit-monitor.db
+  metricsAddr: ":8080"
+  priceMax: 0
+  homePLZ: "36037"
+  localPLZPrefixes: ["36"]
+  pushover:
+    priority: 2
+    retry: 60
+    expire: 3600
+    device: ""
+  flaresolverr:
+    url: http://portasplit-monitor-flaresolverr:8191
+    timeout: 60s
+  sources:
+    braucheklima:
+      enabled: true
+      url: https://braucheklima.de/api/availability
+      product: Midea Portasplit
+    obi:
+      enabled: true
+      productID: "8620890"
+    mediamarkt: { enabled: true, url: "" }
+    euronics: { enabled: true, url: "" }
+    globus: { enabled: true, url: "" }
+    amazon: { enabled: true, url: "" }
+    bauhaus: { enabled: true, url: "" }
+    hagebau: { enabled: true, url: "" }
+    hornbach: { enabled: true, url: "" }
+    toom: { enabled: true, url: "" }
+    bauhausStore:
+      enabled: true
+      storeID: "589"
+      storeName: Bauhaus Frankfurt
 
-# FlareSolverr proxy for Cloudflare-protected sources (braucheklima). When
-# enabled, a FlareSolverr Deployment + Service is created and FLARESOLVERR_URL
-# is injected into the app automatically, so it can run from datacenter IPs that
-# Cloudflare would otherwise 403.
+# FlareSolverr proxy for Cloudflare-protected sources. When enabled, a
+# FlareSolverr Deployment + Service is created; point config.flaresolverr.url
+# (above) at that Service so the app can run from IPs Cloudflare would 403.
 flaresolverr:
   enabled: true
   image:

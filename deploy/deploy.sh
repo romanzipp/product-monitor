@@ -25,7 +25,7 @@ log "ensuring remote dir $INSTALL_DIR exists..."
 ssh "$REMOTE" "sudo mkdir -p '$INSTALL_DIR' && sudo chown \"\$(id -un):\$(id -gn)\" '$INSTALL_DIR'"
 
 # Sync the build context. --delete keeps the remote in lockstep with the repo;
-# excluded paths (notably .env and the SQLite data) are never touched/removed.
+# excluded paths (.env, config.yaml and the SQLite data) are never touched/removed.
 log "syncing source to $REMOTE:$INSTALL_DIR ..."
 rsync -az --delete \
   --exclude '.git/' \
@@ -33,18 +33,24 @@ rsync -az --delete \
   --exclude 'dist/' \
   --exclude '*.db' --exclude '*.db-wal' --exclude '*.db-shm' \
   --exclude '.env' \
+  --exclude 'config.yaml' \
   "$ROOT/" "$REMOTE:$INSTALL_DIR/"
 
-# Ship a local .env ONLY the first time, so server-side secrets are never
-# clobbered on later deploys.
-if ssh "$REMOTE" "test -f '$INSTALL_DIR/.env'"; then
-  log ".env already present on remote, leaving it untouched"
-elif [[ -f "$ROOT/.env" ]]; then
-  log "uploading local .env (first deploy)..."
-  scp -q "$ROOT/.env" "$REMOTE:$INSTALL_DIR/.env"
-else
-  log "WARNING: no .env on remote and none locally - create $INSTALL_DIR/.env before the app can start"
-fi
+# Ship .env and config.yaml ONLY the first time, so server-side secrets and
+# config are never clobbered on later deploys.
+upload_once() {
+  local name="$1"
+  if ssh "$REMOTE" "test -f '$INSTALL_DIR/$name'"; then
+    log "$name already present on remote, leaving it untouched"
+  elif [[ -f "$ROOT/$name" ]]; then
+    log "uploading local $name (first deploy)..."
+    scp -q "$ROOT/$name" "$REMOTE:$INSTALL_DIR/$name"
+  else
+    log "WARNING: no $name on remote and none locally - create $INSTALL_DIR/$name before the app can start"
+  fi
+}
+upload_once .env
+upload_once config.yaml
 
 log "building + starting via docker compose on remote..."
 ssh "$REMOTE" "cd '$INSTALL_DIR' && docker compose up -d --build"

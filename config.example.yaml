@@ -1,0 +1,68 @@
+# portasplit-monitor configuration.
+# Copy to config.yaml and run: `make run` (or mount it in Docker/Kubernetes).
+# Secrets are NOT set here — PUSHOVER_TOKEN and PUSHOVER_USER come from the
+# environment (or a .env file). Every field below is optional; omitted keys fall
+# back to the defaults shown.
+
+checkInterval: 5m
+httpTimeout: 30s
+dbPath: klima.db            # container/prod: /data/portasplit-monitor.db
+metricsAddr: ":8080"        # Prometheus /metrics listen address
+priceMax: 0                 # ignore offers above this many euros; 0 = no limit
+
+# Reference location. OBI queries against homePLZ and the in-store filter
+# prefixes default to its region (first two digits). localPLZPrefixes keeps an
+# in-store result only if its PLZ starts with one of these; online is unaffected.
+homePLZ: "36037"
+localPLZPrefixes: ["36"]
+
+pushover:
+  priority: 2               # 2 = emergency (repeats until acknowledged)
+  retry: 60                 # emergency: seconds between repeats (min 30)
+  expire: 3600              # emergency: seconds until repeats stop (max 10800)
+  device: ""                # optional target device
+
+flaresolverr:
+  # Proxy for Cloudflare/anti-bot sources. Empty = fetch directly (residential
+  # IP only). Docker Compose: http://flaresolverr:8191
+  url: ""
+  timeout: 60s
+
+sources:
+  braucheklima:
+    enabled: true
+    url: https://braucheklima.de/api/availability
+    product: Midea Portasplit
+  obi:
+    enabled: true
+    productID: "8620890"
+  # Page-check sources. Empty url uses the built-in default product page.
+  mediamarkt:
+    enabled: true
+    url: ""
+  euronics:
+    enabled: true
+    url: ""
+  globus:
+    enabled: true
+    url: ""
+  amazon:
+    enabled: true
+    url: ""
+  bauhaus:
+    enabled: true
+    url: ""
+  hagebau:
+    enabled: true
+    url: ""
+  hornbach:
+    enabled: true
+    url: ""
+  toom:
+    enabled: true
+    url: ""
+  # Bauhaus store pickup availability (needs flaresolverr; store 589 = Frankfurt).
+  bauhausStore:
+    enabled: true
+    storeID: "589"
+    storeName: Bauhaus Frankfurt

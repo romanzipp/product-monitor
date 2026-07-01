@@ -1,41 +1,35 @@
-// Package config loads application configuration from the environment.
-// Values may be supplied via a .env file (loaded automatically) or via real
-// environment variables, which always take precedence.
+// Package config loads runtime configuration from a YAML file. Secrets
+// (Pushover token/user) come from the environment, not the file.
 package config
 
 import (
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
+	"gopkg.in/yaml.v3"
 )
 
-// Config holds all runtime configuration.
+// Config holds all runtime configuration in a flat shape for the rest of the app.
 type Config struct {
 	CheckInterval time.Duration
 	HTTPTimeout   time.Duration
 	DBPath        string
-	MetricsAddr   string // listen address for the Prometheus /metrics endpoint
-	PriceMax      int    // whole euros; 0 = no limit
+	MetricsAddr   string
+	PriceMax      int
 
-	PushoverToken    string
-	PushoverUser     string
+	PushoverToken    string // from env PUSHOVER_TOKEN
+	PushoverUser     string // from env PUSHOVER_USER
 	PushoverPriority int
 	PushoverDevice   string
-	// PushoverRetry/Expire apply to emergency priority (2): repeat every retry
-	// up to expire (seconds) until acknowledged.
-	PushoverRetry  int
-	PushoverExpire int
+	PushoverRetry    int
+	PushoverExpire   int
 
 	BraucheKlimaEnabled bool
 	BraucheKlimaURL     string
 	BraucheKlimaProduct string
 
-	// FlareSolverrURL, when set, routes Cloudflare-protected sources through a
-	// FlareSolverr proxy. Empty disables it.
 	FlareSolverrURL     string
 	FlareSolverrTimeout time.Duration
 
@@ -66,83 +60,183 @@ type Config struct {
 	ToomEnabled bool
 	ToomURL     string
 
-	// BauhausStore checks one Bauhaus store's pickup availability via its
-	// purchasability API (needs FlareSolverr; cf_clearance is IP-bound).
 	BauhausStoreEnabled bool
 	BauhausStoreID      string
 	BauhausStoreName    string
 
-	// HomePLZ is the single location reference: OBI queries against it and the
-	// in-store filter prefixes default to its leading digits.
-	HomePLZ string
-
-	// LocalPLZPrefixes keeps an in-store result only if its postal code starts
-	// with one of these prefixes. Empty disables the filter; online is unaffected.
+	HomePLZ          string
 	LocalPLZPrefixes []string
 }
 
-// Load reads a local .env file (if present) and the environment, applies
-// defaults, and validates required fields.
-func Load() (*Config, error) {
-	// A missing .env is fine when values come from real environment variables.
+// Duration unmarshals a YAML duration string such as "5m" or "30s".
+type Duration time.Duration
+
+func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
+	var s string
+	if err := value.Decode(&s); err != nil {
+		return err
+	}
+	parsed, err := time.ParseDuration(s)
+	if err != nil {
+		return fmt.Errorf("invalid duration %q: %w", s, err)
+	}
+	*d = Duration(parsed)
+	return nil
+}
+
+// sourceFile is the YAML shape for a page-check source (URL optional; empty uses
+// the source's built-in default).
+type sourceFile struct {
+	Enabled bool   `yaml:"enabled"`
+	URL     string `yaml:"url"`
+}
+
+// fileConfig mirrors the YAML file. It is populated with defaults first, then the
+// file is unmarshalled on top, so absent keys keep their defaults.
+type fileConfig struct {
+	CheckInterval    Duration `yaml:"checkInterval"`
+	HTTPTimeout      Duration `yaml:"httpTimeout"`
+	DBPath           string   `yaml:"dbPath"`
+	MetricsAddr      string   `yaml:"metricsAddr"`
+	PriceMax         int      `yaml:"priceMax"`
+	HomePLZ          string   `yaml:"homePLZ"`
+	LocalPLZPrefixes []string `yaml:"localPLZPrefixes"`
+
+	Pushover struct {
+		Priority int    `yaml:"priority"`
+		Retry    int    `yaml:"retry"`
+		Expire   int    `yaml:"expire"`
+		Device   string `yaml:"device"`
+	} `yaml:"pushover"`
+
+	FlareSolverr struct {
+		URL     string   `yaml:"url"`
+		Timeout Duration `yaml:"timeout"`
+	} `yaml:"flaresolverr"`
+
+	Sources struct {
+		BraucheKlima struct {
+			Enabled bool   `yaml:"enabled"`
+			URL     string `yaml:"url"`
+			Product string `yaml:"product"`
+		} `yaml:"braucheklima"`
+		Obi struct {
+			Enabled   bool   `yaml:"enabled"`
+			ProductID string `yaml:"productID"`
+		} `yaml:"obi"`
+		MediaMarkt   sourceFile `yaml:"mediamarkt"`
+		Euronics     sourceFile `yaml:"euronics"`
+		Globus       sourceFile `yaml:"globus"`
+		Amazon       sourceFile `yaml:"amazon"`
+		Bauhaus      sourceFile `yaml:"bauhaus"`
+		Hagebau      sourceFile `yaml:"hagebau"`
+		Hornbach     sourceFile `yaml:"hornbach"`
+		Toom         sourceFile `yaml:"toom"`
+		BauhausStore struct {
+			Enabled   bool   `yaml:"enabled"`
+			StoreID   string `yaml:"storeID"`
+			StoreName string `yaml:"storeName"`
+		} `yaml:"bauhausStore"`
+	} `yaml:"sources"`
+}
+
+func defaults() fileConfig {
+	var fc fileConfig
+	fc.CheckInterval = Duration(5 * time.Minute)
+	fc.HTTPTimeout = Duration(30 * time.Second)
+	fc.DBPath = "klima.db"
+	fc.MetricsAddr = ":8080"
+	fc.HomePLZ = "36037"
+
+	fc.Pushover.Priority = 2 // emergency
+	fc.Pushover.Retry = 60
+	fc.Pushover.Expire = 3600
+
+	fc.FlareSolverr.Timeout = Duration(60 * time.Second)
+
+	fc.Sources.BraucheKlima.Enabled = true
+	fc.Sources.BraucheKlima.URL = "https://braucheklima.de/api/availability"
+	fc.Sources.BraucheKlima.Product = "Midea Portasplit"
+	fc.Sources.Obi.Enabled = true
+	fc.Sources.Obi.ProductID = "8620890"
+	fc.Sources.MediaMarkt.Enabled = true
+	fc.Sources.Euronics.Enabled = true
+	fc.Sources.Globus.Enabled = true
+	fc.Sources.Amazon.Enabled = true
+	fc.Sources.Bauhaus.Enabled = true
+	fc.Sources.Hagebau.Enabled = true
+	fc.Sources.Hornbach.Enabled = true
+	fc.Sources.Toom.Enabled = true
+	fc.Sources.BauhausStore.Enabled = true
+	fc.Sources.BauhausStore.StoreID = "589"
+	fc.Sources.BauhausStore.StoreName = "Bauhaus Frankfurt"
+	return fc
+}
+
+// Load reads the YAML config at path (over built-in defaults) and overlays the
+// secrets from the environment. A .env file is loaded for convenience in dev.
+func Load(path string) (*Config, error) {
 	_ = godotenv.Load()
 
-	homePLZ := envStr("LOCAL_PLZ", "36037")
+	fc := defaults()
+	if data, err := os.ReadFile(path); err != nil {
+		return nil, fmt.Errorf("read config %q: %w", path, err)
+	} else if err := yaml.Unmarshal(data, &fc); err != nil {
+		return nil, fmt.Errorf("parse config %q: %w", path, err)
+	}
+
+	prefixes := fc.LocalPLZPrefixes
+	if len(prefixes) == 0 {
+		prefixes = plzRegion(fc.HomePLZ)
+	}
 
 	cfg := &Config{
-		CheckInterval: envDuration("CHECK_INTERVAL", 5*time.Minute),
-		HTTPTimeout:   envDuration("HTTP_TIMEOUT", 30*time.Second),
-		DBPath:        envStr("DB_PATH", "klima.db"),
-		MetricsAddr:   envStr("METRICS_ADDR", ":8080"),
-		PriceMax:      envInt("PRICE_MAX", 0),
+		CheckInterval: time.Duration(fc.CheckInterval),
+		HTTPTimeout:   time.Duration(fc.HTTPTimeout),
+		DBPath:        fc.DBPath,
+		MetricsAddr:   fc.MetricsAddr,
+		PriceMax:      fc.PriceMax,
 
 		PushoverToken:    os.Getenv("PUSHOVER_TOKEN"),
 		PushoverUser:     os.Getenv("PUSHOVER_USER"),
-		PushoverPriority: envInt("PUSHOVER_PRIORITY", 2), // 2 = emergency
-		PushoverDevice:   os.Getenv("PUSHOVER_DEVICE"),
-		PushoverRetry:    envInt("PUSHOVER_RETRY", 60),
-		PushoverExpire:   envInt("PUSHOVER_EXPIRE", 3600),
+		PushoverPriority: fc.Pushover.Priority,
+		PushoverDevice:   fc.Pushover.Device,
+		PushoverRetry:    fc.Pushover.Retry,
+		PushoverExpire:   fc.Pushover.Expire,
 
-		BraucheKlimaEnabled: envBool("BRAUCHEKLIMA_ENABLED", true),
-		BraucheKlimaURL:     envStr("BRAUCHEKLIMA_URL", "https://braucheklima.de/api/availability"),
-		BraucheKlimaProduct: envStr("BRAUCHEKLIMA_PRODUCT", "Midea Portasplit"),
+		BraucheKlimaEnabled: fc.Sources.BraucheKlima.Enabled,
+		BraucheKlimaURL:     fc.Sources.BraucheKlima.URL,
+		BraucheKlimaProduct: fc.Sources.BraucheKlima.Product,
 
-		FlareSolverrURL:     envStr("FLARESOLVERR_URL", ""),
-		FlareSolverrTimeout: envDuration("FLARESOLVERR_TIMEOUT", 60*time.Second),
+		FlareSolverrURL:     fc.FlareSolverr.URL,
+		FlareSolverrTimeout: time.Duration(fc.FlareSolverr.Timeout),
 
-		ObiEnabled:   envBool("OBI_ENABLED", true),
-		ObiProductID: envStr("OBI_PRODUCT_ID", "8620890"),
+		ObiEnabled:   fc.Sources.Obi.Enabled,
+		ObiProductID: fc.Sources.Obi.ProductID,
 
-		MediaMarktEnabled: envBool("MEDIAMARKT_ENABLED", true),
-		MediaMarktURL:     envStr("MEDIAMARKT_URL", ""),
+		MediaMarktEnabled: fc.Sources.MediaMarkt.Enabled,
+		MediaMarktURL:     fc.Sources.MediaMarkt.URL,
+		EuronicsEnabled:   fc.Sources.Euronics.Enabled,
+		EuronicsURL:       fc.Sources.Euronics.URL,
+		GlobusEnabled:     fc.Sources.Globus.Enabled,
+		GlobusURL:         fc.Sources.Globus.URL,
+		AmazonEnabled:     fc.Sources.Amazon.Enabled,
+		AmazonURL:         fc.Sources.Amazon.URL,
+		BauhausEnabled:    fc.Sources.Bauhaus.Enabled,
+		BauhausURL:        fc.Sources.Bauhaus.URL,
+		HagebauEnabled:    fc.Sources.Hagebau.Enabled,
+		HagebauURL:        fc.Sources.Hagebau.URL,
+		HornbachEnabled:   fc.Sources.Hornbach.Enabled,
+		HornbachURL:       fc.Sources.Hornbach.URL,
+		ToomEnabled:       fc.Sources.Toom.Enabled,
+		ToomURL:           fc.Sources.Toom.URL,
 
-		EuronicsEnabled: envBool("EURONICS_ENABLED", true),
-		EuronicsURL:     envStr("EURONICS_URL", ""),
+		BauhausStoreEnabled: fc.Sources.BauhausStore.Enabled,
+		BauhausStoreID:      fc.Sources.BauhausStore.StoreID,
+		BauhausStoreName:    fc.Sources.BauhausStore.StoreName,
 
-		GlobusEnabled: envBool("GLOBUS_ENABLED", true),
-		GlobusURL:     envStr("GLOBUS_URL", ""),
-
-		AmazonEnabled: envBool("AMAZON_ENABLED", true),
-		AmazonURL:     envStr("AMAZON_URL", ""),
-
-		BauhausEnabled: envBool("BAUHAUS_ENABLED", true),
-		BauhausURL:     envStr("BAUHAUS_URL", ""),
-
-		HagebauEnabled: envBool("HAGEBAU_ENABLED", true),
-		HagebauURL:     envStr("HAGEBAU_URL", ""),
-
-		HornbachEnabled: envBool("HORNBACH_ENABLED", true),
-		HornbachURL:     envStr("HORNBACH_URL", ""),
-
-		ToomEnabled: envBool("TOOM_ENABLED", true),
-		ToomURL:     envStr("TOOM_URL", ""),
-
-		BauhausStoreEnabled: envBool("BAUHAUS_STORE_ENABLED", true),
-		BauhausStoreID:      envStr("BAUHAUS_STORE_ID", "589"),
-		BauhausStoreName:    envStr("BAUHAUS_STORE_NAME", "Bauhaus Frankfurt"),
-
-		HomePLZ:          homePLZ,
-		LocalPLZPrefixes: envCSV("LOCAL_PLZ_PREFIXES", plzRegion(homePLZ)),
+		HomePLZ:          fc.HomePLZ,
+		LocalPLZPrefixes: prefixes,
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -153,47 +247,16 @@ func Load() (*Config, error) {
 
 func (c *Config) validate() error {
 	if c.PushoverToken == "" || c.PushoverUser == "" {
-		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER are required")
+		return fmt.Errorf("PUSHOVER_TOKEN and PUSHOVER_USER environment variables are required")
 	}
 	anySource := c.BraucheKlimaEnabled || c.ObiEnabled || c.MediaMarktEnabled || c.EuronicsEnabled || c.GlobusEnabled || c.AmazonEnabled || c.BauhausEnabled || c.HagebauEnabled || c.HornbachEnabled || c.ToomEnabled || c.BauhausStoreEnabled
 	if !anySource {
-		return fmt.Errorf("at least one source must be enabled (*_ENABLED)")
+		return fmt.Errorf("at least one source must be enabled")
 	}
 	if c.CheckInterval <= 0 {
-		return fmt.Errorf("CHECK_INTERVAL must be a positive duration")
+		return fmt.Errorf("checkInterval must be a positive duration")
 	}
 	return nil
-}
-
-func envStr(key, def string) string {
-	if v, ok := os.LookupEnv(key); ok && v != "" {
-		return v
-	}
-	return def
-}
-
-func envBool(key string, def bool) bool {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	b, err := strconv.ParseBool(v)
-	if err != nil {
-		return def
-	}
-	return b
-}
-
-func envInt(key string, def int) int {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	n, err := strconv.Atoi(v)
-	if err != nil {
-		return def
-	}
-	return n
 }
 
 // plzRegion returns a postal code's first two digits, e.g. "36037" -> "36".
@@ -205,34 +268,4 @@ func plzRegion(plz string) []string {
 		return []string{plz}
 	}
 	return nil
-}
-
-// envCSV parses a comma-separated env var into a trimmed, non-empty slice.
-func envCSV(key string, def []string) []string {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	var out []string
-	for _, part := range strings.Split(v, ",") {
-		if p := strings.TrimSpace(part); p != "" {
-			out = append(out, p)
-		}
-	}
-	if len(out) == 0 {
-		return def
-	}
-	return out
-}
-
-func envDuration(key string, def time.Duration) time.Duration {
-	v := os.Getenv(key)
-	if v == "" {
-		return def
-	}
-	d, err := time.ParseDuration(v)
-	if err != nil {
-		return def
-	}
-	return d
 }

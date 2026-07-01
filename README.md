@@ -81,23 +81,33 @@ automatically. A Grafana dashboard lives in the `solum` repo under
 
 ## Configuration
 
-All settings come from environment variables, optionally supplied via a `.env`
-file. Copy `.env.example` to `.env` and fill in your Pushover credentials.
+Non-secret settings live in a YAML file (`config.yaml`, path via `-config`,
+default `config.yaml`). Copy `config.example.yaml` to `config.yaml` and edit it;
+every key is optional and falls back to a sensible default.
 
-The only required values are `PUSHOVER_TOKEN` and `PUSHOVER_USER`. Everything
-else has sensible defaults.
+**Secrets stay in the environment** (or a `.env` file): only `PUSHOVER_TOKEN` and
+`PUSHOVER_USER`, both required. Nothing else reads the environment.
 
 ## Run locally (Go)
 
 ```bash
-cp .env.example .env   # then edit PUSHOVER_TOKEN / PUSHOVER_USER
+cp .env.example .env               # PUSHOVER_TOKEN / PUSHOVER_USER
+cp config.example.yaml config.yaml # dev defaults are fine as-is
 make run
 ```
 
 ## Run with Docker Compose
 
 ```bash
-cp .env.example .env   # then edit PUSHOVER_TOKEN / PUSHOVER_USER
+cp .env.example .env               # PUSHOVER_TOKEN / PUSHOVER_USER
+cp config.example.yaml config.yaml
+```
+
+Then edit `config.yaml` for the container: set `dbPath: /data/portasplit-monitor.db`
+and `flaresolverr.url: http://flaresolverr:8191`. It is mounted read-only into the
+monitor container. Finally:
+
+```bash
 docker compose up -d --build
 ```
 
@@ -124,15 +134,16 @@ REMOTE=user@host make deploy
 ```
 
 The repo is synced to `/opt/portasplit-monitor` (override with `INSTALL_DIR`).
-Your local `.env` is uploaded only on the first deploy; later runs leave the
-server-side `.env` and the database volume untouched.
+Your local `.env` and `config.yaml` are uploaded only on the first deploy; later
+runs leave the server-side copies and the database volume untouched.
 
 ## Adding a source
 
 1. Implement `model.Source` (`Name() string` + `Check(ctx) ([]Availability, error)`)
    in a new file under `internal/source/`.
 2. In `cmd/portasplit-monitor/main.go`, construct it and append to the
-   `sources` slice (gated by its own `*_ENABLED` config flag).
+   `sources` slice (gated by its own config flag), and add the field to
+   `internal/config` + `config.example.yaml`.
 3. Map every distinct in-stock result to a stable `Availability.Key` so the
    dedup store can track it.
 

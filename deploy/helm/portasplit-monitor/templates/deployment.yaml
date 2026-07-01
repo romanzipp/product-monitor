@@ -17,6 +17,8 @@ spec:
       labels:
         {{- include "portasplit-monitor.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: app
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -30,20 +32,12 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
+          args:
+            - -config
+            - /etc/portasplit-monitor/config.yaml
           ports:
             - name: metrics
               containerPort: {{ .Values.metrics.port }}
-          env:
-            {{- range $k, $v := .Values.env }}
-            - name: {{ $k }}
-              value: {{ $v | quote }}
-            {{- end }}
-            - name: METRICS_ADDR
-              value: {{ printf ":%v" .Values.metrics.port | quote }}
-            {{- if .Values.flaresolverr.enabled }}
-            - name: FLARESOLVERR_URL
-              value: {{ printf "http://%s-flaresolverr:%v" (include "portasplit-monitor.fullname" .) .Values.flaresolverr.port | quote }}
-            {{- end }}
           {{- with .Values.envFromSecret.name }}
           envFrom:
             - secretRef:
@@ -60,11 +54,17 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
+            - name: config
+              mountPath: /etc/portasplit-monitor
+              readOnly: true
             - name: data
               mountPath: {{ .Values.persistence.mountPath }}
             - name: tmp
               mountPath: /tmp
       volumes:
+        - name: config
+          configMap:
+            name: {{ include "portasplit-monitor.fullname" . }}-config
         - name: tmp
           emptyDir: {}
         - name: data
