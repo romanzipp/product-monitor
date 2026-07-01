@@ -34,25 +34,43 @@ config:
   flaresolverr:
     url: http://product-monitor-flaresolverr:8191
     timeout: 60s
+  # Each source takes a list, so one source can watch multiple products.
   sources:
     braucheklima:
       enabled: true
       url: https://braucheklima.de/api/availability
-      product: Midea Portasplit
+      products: ["Midea Portasplit"]
     obi:
       enabled: true
-      productID: "8620890"
-    mediamarkt: { enabled: true, url: "" }
-    euronics: { enabled: true, url: "" }
-    globus: { enabled: true, url: "" }
-    amazon: { enabled: true, url: "" }
-    bauhaus: { enabled: true, url: "" }
-    hagebau: { enabled: true, url: "" }
-    hornbach: { enabled: true, url: "" }
-    toom: { enabled: true, url: "" }
+      productIDs: ["8620890"]
+    mediamarkt:
+      enabled: true
+      urls: ["https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html"]
+    euronics:
+      enabled: true
+      urls: ["https://www.euronics.de/haus-und-haushalt/heizen-lueften-kuehlen/kuehlen/split-klimageraete/porta-split-split-klimageraet-a-4065327878899"]
+    globus:
+      enabled: true
+      urls: ["https://www.globus-baumarkt.de/p/midea-portasplit-mobile-split-klimaanlage-12000-btu-heiz-kuehlfunktion-0694600235/"]
+    amazon:
+      enabled: true
+      urls: ["https://www.amazon.de/dp/B0D3PP64JS"]
+    bauhaus:
+      enabled: true
+      urls: ["https://www.bauhaus.info/p/31934233"]
+    hagebau:
+      enabled: true
+      urls: ["https://www.hagebau.de/p/midea-klimaanlage-portasplit-anP7004600334/"]
+    hornbach:
+      enabled: true
+      urls: ["https://www.hornbach.de/p/klimasplitgeraet-midea-portasplit-12-000-btu-105-m-weiss/12356554/"]
+    toom:
+      enabled: true
+      urls: ["https://toom.de/p/mobiles-klimageraet-portasplit-12000-btuh/9350668"]
     bauhausStore:
       enabled: true
-      storeID: "589"
+      productIDs: ["31934233"]
+      storeIDs: ["589"]
       storeName: Bauhaus Frankfurt
 
 # FlareSolverr proxy for Cloudflare-protected sources. When enabled, a

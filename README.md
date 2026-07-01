@@ -19,42 +19,45 @@ notification. Offers above `PRICE_MAX` are ignored.
 
 ## Sources
 
-| Source | What it polls | Channels |
-| --- | --- | --- |
-| `braucheklima` | `https://braucheklima.de/api/availability` (aggregated feed, ~1200 physical stores) | in-store only |
-| `obi` | `https://www.obi.de/api/pdp/v1/availability/<id>` (single product) | online + in-store |
-| `mediamarkt` | MediaMarkt product page (`MEDIAMARKT_URL`) | online |
-| `euronics` | Euronics product page (`EURONICS_URL`) | online |
-| `globus` | Globus Baumarkt product page (`GLOBUS_URL`) | online |
-| `amazon` | Amazon product page, buybox check (`AMAZON_URL`) | online |
-| `bauhaus` | Bauhaus product page (`BAUHAUS_URL`) | online |
-| `hagebau` | Hagebau product page (`HAGEBAU_URL`) | online |
-| `hornbach` | Hornbach product page (`HORNBACH_URL`) | online |
-| `toom` | toom product page (`TOOM_URL`) | online |
-| `bauhaus-store` | Bauhaus `/api/purchasability` for one store (`BAUHAUS_STORE_ID`, default Frankfurt) | in-store |
+Every source takes a **list** in `config.yaml`, so one source can watch several
+products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
+
+| Source | What it polls | Config | Channels |
+| --- | --- | --- | --- |
+| `braucheklima` | aggregated feed, ~1200 physical stores | `url` + `products` | in-store only |
+| `obi` | `obi.de` availability API | `productIDs` | online + in-store |
+| `mediamarkt` | MediaMarkt product pages | `urls` | online |
+| `euronics` | Euronics product pages | `urls` | online |
+| `globus` | Globus Baumarkt product pages | `urls` | online |
+| `amazon` | Amazon product pages, buybox check | `urls` | online |
+| `bauhaus` | Bauhaus product pages | `urls` | online |
+| `hagebau` | Hagebau product pages | `urls` | online |
+| `hornbach` | Hornbach product pages | `urls` | online |
+| `toom` | toom product pages | `urls` | online |
+| `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `storeIDs` | in-store |
 
 Online retailers each have their own source (direct product-page check); the
-`braucheklima` feed now contributes physical-store stock only, so online stores
-are not double-counted. Online product-page sources rely on `FlareSolverr`
-(several retailers are anti-bot protected or JS-rendered) and most use the
-`schema.org` JSON-LD availability; Amazon has no such marker, so its buybox
-add-to-cart button is used and it reports no price.
+`braucheklima` feed contributes physical-store stock only, so online stores are
+not double-counted. Online product-page sources rely on `FlareSolverr` (several
+retailers are anti-bot protected or JS-rendered) and most use the `schema.org`
+JSON-LD availability; Amazon has no such marker, so its buybox add-to-cart button
+is used and it reports no price.
 
 `bauhaus-store` checks one Bauhaus store's pickup stock via the
 `/api/purchasability` endpoint. That endpoint is XHR-only behind Cloudflare, so a
 FlareSolverr session (clearance cookie + user agent) is harvested and the API is
 called directly. This requires the monitor and FlareSolverr to share an egress IP
 (the clearance cookie is IP-bound) — true for the Docker Compose / single-host
-setup. Its result is store-targeted, so it bypasses the `LOCAL_PLZ_PREFIXES`
+setup. Its result is store-targeted, so it bypasses the `localPLZPrefixes`
 filter.
 
 ### Online vs in-store
 
 Each result is tagged as **online** (shipped/delivery) or **in-store**
 (physically stocked for pickup); the Pushover message states which. In-store
-results are filtered to nearby stores via `LOCAL_PLZ_PREFIXES` (default `36`, the
-Fulda region) — a store is kept only if its postal code starts with one of the
-listed prefixes. Online results are never filtered.
+results are filtered to nearby stores via `localPLZPrefixes` (e.g. `["36"]` for
+the Fulda region) — a store is kept only if its postal code starts with one of
+the listed prefixes. An empty list disables the filter; online is never filtered.
 
 Sources implement the `model.Source` interface, so adding another retailer is
 localised to one file — see **Adding a source** below.
@@ -77,13 +80,14 @@ The service exposes Prometheus metrics at `/metrics` (listen address
 The Helm chart ships a headless `-metrics` Service and a `ServiceMonitor`
 (`serviceMonitor.enabled`, default on) so the Prometheus Operator scrapes it
 automatically. A Grafana dashboard lives in the `solum` repo under
-`kube-prometheus-extras/dashboards/portasplit.json`.
+`kube-prometheus-extras/dashboards/product-monitor.json`.
 
 ## Configuration
 
-Non-secret settings live in a YAML file (`config.yaml`, path via `-config`,
-default `config.yaml`). Copy `config.example.yaml` to `config.yaml` and edit it;
-every key is optional and falls back to a sensible default.
+All non-secret settings live in a YAML file (`config.yaml`, path via `-config`,
+default `config.yaml`). There are **no built-in defaults** — every value comes
+from the file, so start from `config.example.yaml` (a complete, working config)
+and edit it. A source with an empty list checks nothing.
 
 **Secrets stay in the environment** (or a `.env` file): only `PUSHOVER_TOKEN` and
 `PUSHOVER_USER`, both required. Nothing else reads the environment.
@@ -92,7 +96,7 @@ every key is optional and falls back to a sensible default.
 
 ```bash
 cp .env.example .env               # PUSHOVER_TOKEN / PUSHOVER_USER
-cp config.example.yaml config.yaml # dev defaults are fine as-is
+cp config.example.yaml config.yaml # complete working config; edit as needed
 make run
 ```
 

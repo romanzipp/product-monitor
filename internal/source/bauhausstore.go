@@ -3,6 +3,7 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,21 +13,24 @@ import (
 	"product-monitor/internal/model"
 )
 
-const bauhausStoreProduct = "31934233"
-const bauhausStorePDP = "https://www.bauhaus.info/klimaanlagen/midea-klimasplitgeraet-portasplit-12000-btu/p/31934233"
+// bauhausStoreReferer is a same-origin Bauhaus page used to bootstrap the
+// Cloudflare session (cf_clearance) and as the XHR Referer; it is not the
+// monitored product (those come from config as productIDs).
+const bauhausStoreReferer = "https://www.bauhaus.info/klimaanlagen/midea-klimasplitgeraet-portasplit-12000-btu/p/31934233"
 const bauhausSessionTTL = 15 * time.Minute
 
-// BauhausStoreSource checks in-store (pickup) availability for one Bauhaus store
-// via the /api/purchasability endpoint. The endpoint sits behind Cloudflare and
-// only answers XHR requests, so a FlareSolverr session (cf_clearance cookie +
-// user agent) is harvested and the API is then called directly. Replay requires
-// the app and FlareSolverr to share an egress IP (cf_clearance is IP-bound).
+// BauhausStoreSource checks in-store (pickup) availability for Bauhaus products
+// and stores via the /api/purchasability endpoint (one call per product×store).
+// The endpoint sits behind Cloudflare and only answers XHR requests, so a
+// FlareSolverr session (cf_clearance cookie + user agent) is harvested and the
+// API is then called directly. Replay requires the app and FlareSolverr to share
+// an egress IP (cf_clearance is IP-bound).
 type BauhausStoreSource struct {
-	client    *http.Client
-	fs        *FlareSolverr
-	productID string
-	storeID   string
-	storeName string
+	client     *http.Client
+	fs         *FlareSolverr
+	productIDs []string
+	storeIDs   []string
+	storeName  string
 
 	mu        sync.Mutex
 	cookie    string
@@ -34,35 +38,45 @@ type BauhausStoreSource struct {
 	sessionAt time.Time
 }
 
-// NewBauhausStore builds a source for one Bauhaus store. It requires FlareSolverr.
-func NewBauhausStore(client *http.Client, fs *FlareSolverr, storeID, storeName string) *BauhausStoreSource {
+// NewBauhausStore builds a source for the given Bauhaus products and stores.
+// Needs FlareSolverr.
+func NewBauhausStore(client *http.Client, fs *FlareSolverr, productIDs, storeIDs []string, storeName string) *BauhausStoreSource {
 	return &BauhausStoreSource{
-		client:    client,
-		fs:        fs,
-		productID: bauhausStoreProduct,
-		storeID:   storeID,
-		storeName: storeName,
+		client:     client,
+		fs:         fs,
+		productIDs: productIDs,
+		storeIDs:   storeIDs,
+		storeName:  storeName,
 	}
 }
 
 func (s *BauhausStoreSource) Name() string { return "bauhaus-store" }
 
 func (s *BauhausStoreSource) Check(ctx context.Context) ([]model.Availability, error) {
-	pr, err := s.query(ctx, false)
-	if err != nil {
-		// A stale/invalid session yields a 403 HTML page; refresh and retry once.
-		pr, err = s.query(ctx, true)
-		if err != nil {
-			return nil, err
+	out := make([]model.Availability, 0, len(s.storeIDs))
+	var errs []error
+	for _, productID := range s.productIDs {
+		for _, storeID := range s.storeIDs {
+			pr, err := s.query(ctx, productID, storeID, false)
+			if err != nil {
+				// A stale/invalid session yields a 403 HTML page; refresh and retry once.
+				if pr, err = s.query(ctx, productID, storeID, true); err != nil {
+					errs = append(errs, err)
+					continue
+				}
+			}
+			out = append(out, s.build(productID, storeID, pr)...)
 		}
 	}
-
-	return s.build(pr), nil
+	if len(out) == 0 && len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return out, nil
 }
 
 // build maps a purchasability response to in-store availability, keeping only the
 // STORE result when it is purchasable.
-func (s *BauhausStoreSource) build(pr *bauhausPurchasability) []model.Availability {
+func (s *BauhausStoreSource) build(productID, storeID string, pr *bauhausPurchasability) []model.Availability {
 	out := make([]model.Availability, 0, 1)
 	for _, r := range pr.Results {
 		if r.Kind != "STORE" || !r.Purchasable {
@@ -77,11 +91,11 @@ func (s *BauhausStoreSource) build(pr *bauhausPurchasability) []model.Availabili
 			StoreName:   s.storeName,
 			ProductName: "Midea PortaSplit",
 			Stock:       stock,
-			URL:         bauhausStorePDP,
+			URL:         bauhausStoreReferer,
 			Location:    s.storeName,
 			Channel:     model.ChannelInStore,
 			Targeted:    true,
-			Key:         "bauhaus-store:" + s.storeID + ":" + s.productID,
+			Key:         "bauhaus-store:" + storeID + ":" + productID,
 		})
 	}
 	return out
@@ -96,14 +110,14 @@ type bauhausPurchasability struct {
 	} `json:"results"`
 }
 
-// query calls the purchasability API with the (cached) FlareSolverr session.
-func (s *BauhausStoreSource) query(ctx context.Context, refresh bool) (*bauhausPurchasability, error) {
+// query calls the purchasability API for one product+store with the (cached) session.
+func (s *BauhausStoreSource) query(ctx context.Context, productID, storeID string, refresh bool) (*bauhausPurchasability, error) {
 	cookie, ua, err := s.session(ctx, refresh)
 	if err != nil {
 		return nil, err
 	}
 
-	url := fmt.Sprintf("https://www.bauhaus.info/api/purchasability?productId=%s&quantity=1&storeId=%s", s.productID, s.storeID)
+	url := fmt.Sprintf("https://www.bauhaus.info/api/purchasability?productId=%s&quantity=1&storeId=%s", productID, storeID)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -111,7 +125,7 @@ func (s *BauhausStoreSource) query(ctx context.Context, refresh bool) (*bauhausP
 	req.Header.Set("User-Agent", ua)
 	req.Header.Set("Accept", "*/*")
 	req.Header.Set("Accept-Language", "de-DE,de;q=0.9")
-	req.Header.Set("Referer", bauhausStorePDP)
+	req.Header.Set("Referer", bauhausStoreReferer)
 	req.Header.Set("Sec-Fetch-Dest", "empty")
 	req.Header.Set("Sec-Fetch-Mode", "cors")
 	req.Header.Set("Sec-Fetch-Site", "same-origin")
@@ -146,7 +160,7 @@ func (s *BauhausStoreSource) session(ctx context.Context, force bool) (string, s
 	if !force && s.cookie != "" && time.Since(s.sessionAt) < bauhausSessionTTL {
 		return s.cookie, s.userAgent, nil
 	}
-	cookie, ua, err := s.fs.Session(ctx, bauhausStorePDP)
+	cookie, ua, err := s.fs.Session(ctx, bauhausStoreReferer)
 	if err != nil {
 		return "", "", err
 	}

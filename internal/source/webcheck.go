@@ -19,20 +19,20 @@ var schemaOutOfStock = []string{"schema.org/outofstock", "schema.org/soldout", "
 var digitRunRe = regexp.MustCompile(`[0-9]{6,}`)
 
 // newSchemaCheck builds a webCheck for a retailer that exposes stock via the
-// standard schema.org JSON-LD Offer availability.
-func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, url, storeName string) webCheck {
+// standard schema.org JSON-LD Offer availability across one or more product URLs.
+func newSchemaCheck(name string, client *http.Client, fs *FlareSolverr, urls []string, storeName string) webCheck {
 	return webCheck{
-		name:         name,
-		client:       client,
-		fs:           fs,
-		url:          url,
-		storeName:    storeName,
-		product:      "Midea PortaSplit",
-		channel:      model.ChannelOnline,
-		requireToken: productToken(url),
-		inStock:      schemaInStock,
-		outOfStock:   schemaOutOfStock,
-		wantPrice:    true,
+		name:       name,
+		client:     client,
+		fs:         fs,
+		urls:       urls,
+		storeName:  storeName,
+		product:    "Midea PortaSplit",
+		channel:    model.ChannelOnline,
+		tokenFn:    productToken,
+		inStock:    schemaInStock,
+		outOfStock: schemaOutOfStock,
+		wantPrice:  true,
 	}
 }
 
@@ -78,21 +78,21 @@ func productToken(url string) string {
 	return longest
 }
 
-// webCheck is the shared engine for retailers with no availability API. It
-// fetches the product page (via FlareSolverr when configured) and decides stock
+// webCheck is the shared engine for retailers with no availability API. It checks
+// one or more product pages (via FlareSolverr when configured) and decides stock
 // from the schema.org markers in the embedded JSON-LD. Vendor sources embed it.
 type webCheck struct {
-	name         string
-	client       *http.Client
-	fs           *FlareSolverr
-	url          string
-	storeName    string
-	product      string
-	channel      model.Channel
-	requireToken string // must appear on the page to confirm it is the right one
-	inStock      []string
-	outOfStock   []string
-	wantPrice    bool // extract the schema.org price from the page
+	name       string
+	client     *http.Client
+	fs         *FlareSolverr
+	urls       []string
+	storeName  string
+	product    string
+	channel    model.Channel
+	tokenFn    func(string) string // required page token per URL (empty = no guard)
+	inStock    []string
+	outOfStock []string
+	wantPrice  bool
 }
 
 func (s *webCheck) Name() string {
@@ -100,10 +100,32 @@ func (s *webCheck) Name() string {
 }
 
 func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
+	out := make([]model.Availability, 0, len(s.urls))
+	var errs []error
+	for _, url := range s.urls {
+		a, err := s.checkOne(ctx, url)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		if a != nil {
+			out = append(out, *a)
+		}
+	}
+	// Surface an error only when every URL failed; partial success still returns
+	// the results it found.
+	if len(out) == 0 && len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return out, nil
+}
+
+// checkOne fetches a single product page and returns an availability if in stock.
+func (s *webCheck) checkOne(ctx context.Context, url string) (*model.Availability, error) {
 	headers := map[string]string{"User-Agent": browserUserAgent, "Accept": "text/html,application/xhtml+xml", "Accept-Language": "de-DE,de;q=0.9"}
-	body, err := getBody(ctx, s.client, s.fs, s.url, headers)
+	body, err := getBody(ctx, s.client, s.fs, url, headers)
 	if errors.Is(err, errNotFound) {
-		return []model.Availability{}, nil
+		return nil, nil
 	}
 	if err != nil {
 		return nil, err
@@ -113,13 +135,15 @@ func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
 
 	// Soft-404 guard: delisted products return a 200 page full of OTHER in-stock
 	// items. If this product's id/EAN is absent, it is not really available.
-	if s.requireToken != "" && !strings.Contains(html, strings.ToLower(s.requireToken)) {
-		return []model.Availability{}, nil
+	if s.tokenFn != nil {
+		if token := s.tokenFn(url); token != "" && !strings.Contains(html, strings.ToLower(token)) {
+			return nil, nil
+		}
 	}
 
 	for _, marker := range s.outOfStock {
 		if strings.Contains(html, strings.ToLower(marker)) {
-			return []model.Availability{}, nil
+			return nil, nil
 		}
 	}
 
@@ -131,7 +155,7 @@ func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
 		}
 	}
 	if !available {
-		return []model.Availability{}, nil
+		return nil, nil
 	}
 
 	location := "Online"
@@ -144,13 +168,13 @@ func (s *webCheck) Check(ctx context.Context) ([]model.Availability, error) {
 		StoreName:   s.storeName,
 		ProductName: s.product,
 		Stock:       1, // page check: presence implies availability
-		URL:         s.url,
+		URL:         url,
 		Location:    location,
 		Channel:     s.channel,
-		Key:         s.name + ":" + s.url,
+		Key:         s.name + ":" + url,
 	}
 	if s.wantPrice {
 		a.Price = parsePrice(html)
 	}
-	return []model.Availability{a}, nil
+	return &a, nil
 }

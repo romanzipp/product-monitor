@@ -3,6 +3,7 @@ package source
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,15 +17,15 @@ import (
 type ObiSource struct {
 	client     *http.Client
 	baseURL    string // without the product id
-	productID  string
+	productIDs []string
 	postalCode string
 }
 
-func NewObi(client *http.Client, productID, postalCode string) *ObiSource {
+func NewObi(client *http.Client, productIDs []string, postalCode string) *ObiSource {
 	return &ObiSource{
 		client:     client,
 		baseURL:    "https://www.obi.de/api/pdp/v1/availability",
-		productID:  productID,
+		productIDs: productIDs,
 		postalCode: postalCode,
 	}
 }
@@ -32,7 +33,24 @@ func NewObi(client *http.Client, productID, postalCode string) *ObiSource {
 func (s *ObiSource) Name() string { return "obi" }
 
 func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
-	endpoint := fmt.Sprintf("%s/%s?postalCode=%s&quantity=1&lang=de-DE", s.baseURL, s.productID, s.postalCode)
+	out := make([]model.Availability, 0)
+	var errs []error
+	for _, id := range s.productIDs {
+		avail, err := s.checkOne(ctx, id)
+		if err != nil {
+			errs = append(errs, err)
+			continue
+		}
+		out = append(out, avail...)
+	}
+	if len(out) == 0 && len(errs) > 0 {
+		return nil, errors.Join(errs...)
+	}
+	return out, nil
+}
+
+func (s *ObiSource) checkOne(ctx context.Context, productID string) ([]model.Availability, error) {
+	endpoint := fmt.Sprintf("%s/%s?postalCode=%s&quantity=1&lang=de-DE", s.baseURL, productID, s.postalCode)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
@@ -57,7 +75,7 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 		return nil, fmt.Errorf("decode: %w", err)
 	}
 
-	productName := "OBI #" + s.productID
+	productName := "OBI #" + productID
 	productURL := "https://www.obi.de"
 
 	out := make([]model.Availability, 0)
@@ -78,7 +96,7 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 			Location:    firstNonEmpty(pickStr(st, "city", "address", "street"), s.postalCode),
 			Channel:     model.ChannelInStore,
 			PLZ:         storePLZ,
-			Key:         "obi:" + s.productID + ":pickup:" + id,
+			Key:         "obi:" + productID + ":pickup:" + id,
 		})
 	}
 	for _, seller := range res.DeliveryDataPerSeller {
@@ -96,7 +114,7 @@ func (s *ObiSource) Check(ctx context.Context) ([]model.Availability, error) {
 			URL:         productURL,
 			Location:    "Online · PLZ " + s.postalCode,
 			Channel:     model.ChannelOnline,
-			Key:         "obi:" + s.productID + ":delivery:" + id,
+			Key:         "obi:" + productID + ":delivery:" + id,
 		})
 	}
 	return out, nil

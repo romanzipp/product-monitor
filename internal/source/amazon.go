@@ -7,8 +7,6 @@ import (
 	"product-monitor/internal/model"
 )
 
-const amazonDefaultURL = "https://www.amazon.de/dp/B0D3PP64JS"
-
 var amazonASINRe = regexp.MustCompile(`/dp/([A-Za-z0-9]{10})`)
 
 // AmazonSource checks the Amazon product page. Amazon exposes no schema.org
@@ -19,22 +17,19 @@ type AmazonSource struct {
 	webCheck
 }
 
-// NewAmazon builds an Amazon source; an empty url uses the default page.
-func NewAmazon(client *http.Client, fs *FlareSolverr, url string) *AmazonSource {
-	if url == "" {
-		url = amazonDefaultURL
-	}
+// NewAmazon builds an Amazon source for the given product URLs.
+func NewAmazon(client *http.Client, fs *FlareSolverr, urls []string) *AmazonSource {
 	return &AmazonSource{
 		webCheck: webCheck{
-			name:         "amazon",
-			client:       client,
-			fs:           fs,
-			url:          url,
-			storeName:    "Amazon",
-			product:      "Midea PortaSplit",
-			channel:      model.ChannelOnline,
-			requireToken: amazonASIN(url),
-			inStock:      []string{"add-to-cart-button"},
+			name:      "amazon",
+			client:    client,
+			fs:        fs,
+			urls:      urls,
+			storeName: "Amazon",
+			product:   "Midea PortaSplit",
+			channel:   model.ChannelOnline,
+			tokenFn:   amazonASIN,
+			inStock:   []string{"add-to-cart-button"},
 		},
 	}
 }

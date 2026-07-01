@@ -16,15 +16,15 @@ import (
 // It emits in-store (physical) results only; online sellers have dedicated
 // per-retailer sources. The feed 403s datacenter IPs, so fs is used there.
 type BraucheKlimaSource struct {
-	client  *http.Client
-	fs      *FlareSolverr // optional
-	url     string
-	product string // key in the `articles` map
+	client   *http.Client
+	fs       *FlareSolverr // optional
+	url      string
+	products []string // keys to look up in each store's `articles` map
 }
 
-// NewBraucheKlima constructs a source for the given product key. fs may be nil.
-func NewBraucheKlima(client *http.Client, fs *FlareSolverr, url, product string) *BraucheKlimaSource {
-	return &BraucheKlimaSource{client: client, fs: fs, url: url, product: product}
+// NewBraucheKlima constructs a source for the given product keys. fs may be nil.
+func NewBraucheKlima(client *http.Client, fs *FlareSolverr, url string, products []string) *BraucheKlimaSource {
+	return &BraucheKlimaSource{client: client, fs: fs, url: url, products: products}
 }
 
 func (s *BraucheKlimaSource) Name() string { return "braucheklima" }
@@ -42,43 +42,41 @@ func (s *BraucheKlimaSource) Check(ctx context.Context) ([]model.Availability, e
 
 	out := make([]model.Availability, 0)
 	for _, st := range stores {
-		art, ok := st.Articles[s.product]
-		if !ok {
-			continue
-		}
-		if len(art.Stocks) == 0 {
-			continue
-		}
-		// Stocks are newest-first; index 0 is the current state.
-		stock := art.Stocks[0].Stock
-		if stock <= 0 {
-			continue
-		}
-
-		var price *float64
-		if len(art.Prices) > 0 {
-			p := art.Prices[0].Price
-			price = &p
-		}
-
 		// Online sellers (no postal code) have dedicated per-retailer sources;
 		// braucheklima covers physical stores only.
 		if st.PLZ == nil || *st.PLZ == "" {
 			continue
 		}
+		for _, product := range s.products {
+			art, ok := st.Articles[product]
+			if !ok || len(art.Stocks) == 0 {
+				continue
+			}
+			// Stocks are newest-first; index 0 is the current state.
+			stock := art.Stocks[0].Stock
+			if stock <= 0 {
+				continue
+			}
 
-		out = append(out, model.Availability{
-			Source:      s.Name(),
-			StoreName:   st.Name,
-			ProductName: s.product,
-			Stock:       stock,
-			Price:       price,
-			URL:         art.URL,
-			Location:    bkLocation(st),
-			Channel:     model.ChannelInStore,
-			PLZ:         *st.PLZ,
-			Key:         "braucheklima:" + strconv.Itoa(art.StoresArticlesID),
-		})
+			var price *float64
+			if len(art.Prices) > 0 {
+				p := art.Prices[0].Price
+				price = &p
+			}
+
+			out = append(out, model.Availability{
+				Source:      s.Name(),
+				StoreName:   st.Name,
+				ProductName: product,
+				Stock:       stock,
+				Price:       price,
+				URL:         art.URL,
+				Location:    bkLocation(st),
+				Channel:     model.ChannelInStore,
+				PLZ:         *st.PLZ,
+				Key:         "braucheklima:" + strconv.Itoa(art.StoresArticlesID),
+			})
+		}
 	}
 	return out, nil
 }

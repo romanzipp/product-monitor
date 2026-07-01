@@ -28,41 +28,57 @@ flaresolverr:
   url: ""
   timeout: 60s
 
+# Each source accepts a list, so one source can watch multiple products. There
+# are no built-in defaults: a source with an empty list checks nothing.
 sources:
   braucheklima:
     enabled: true
     url: https://braucheklima.de/api/availability
-    product: Midea Portasplit
+    products:
+      - Midea Portasplit
+      # - Midea Portasplit Cool
   obi:
     enabled: true
-    productID: "8620890"
-  # Page-check sources. Empty url uses the built-in default product page.
+    productIDs:
+      - "8620890"
   mediamarkt:
     enabled: true
-    url: ""
+    urls:
+      - https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html
   euronics:
     enabled: true
-    url: ""
+    urls:
+      - https://www.euronics.de/haus-und-haushalt/heizen-lueften-kuehlen/kuehlen/split-klimageraete/porta-split-split-klimageraet-a-4065327878899
   globus:
     enabled: true
-    url: ""
+    urls:
+      - https://www.globus-baumarkt.de/p/midea-portasplit-mobile-split-klimaanlage-12000-btu-heiz-kuehlfunktion-0694600235/
   amazon:
     enabled: true
-    url: ""
+    urls:
+      - https://www.amazon.de/dp/B0D3PP64JS
   bauhaus:
     enabled: true
-    url: ""
+    urls:
+      - https://www.bauhaus.info/p/31934233
   hagebau:
     enabled: true
-    url: ""
+    urls:
+      - https://www.hagebau.de/p/midea-klimaanlage-portasplit-anP7004600334/
   hornbach:
     enabled: true
-    url: ""
+    urls:
+      - https://www.hornbach.de/p/klimasplitgeraet-midea-portasplit-12-000-btu-105-m-weiss/12356554/
   toom:
     enabled: true
-    url: ""
-  # Bauhaus store pickup availability (needs flaresolverr; store 589 = Frankfurt).
+    urls:
+      - https://toom.de/p/mobiles-klimageraet-portasplit-12000-btuh/9350668
+  # Bauhaus store pickup availability, checked per product×store (needs
+  # flaresolverr; product 31934233 = PortaSplit, store 589 = Frankfurt).
   bauhausStore:
     enabled: true
-    storeID: "589"
+    productIDs:
+      - "31934233"
+    storeIDs:
+      - "589"
     storeName: Bauhaus Frankfurt

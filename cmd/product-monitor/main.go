@@ -58,40 +58,40 @@ func main() {
 
 	var sources []model.Source
 	if cfg.BraucheKlimaEnabled {
-		sources = append(sources, source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProduct))
+		sources = append(sources, source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProducts))
 	}
 	if cfg.ObiEnabled {
-		sources = append(sources, source.NewObi(httpClient, cfg.ObiProductID, cfg.HomePLZ))
+		sources = append(sources, source.NewObi(httpClient, cfg.ObiProductIDs, cfg.HomePLZ))
 	}
 	if cfg.MediaMarktEnabled {
-		sources = append(sources, source.NewMediaMarkt(httpClient, flareSolverr, cfg.MediaMarktURL))
+		sources = append(sources, source.NewMediaMarkt(httpClient, flareSolverr, cfg.MediaMarktURLs))
 	}
 	if cfg.EuronicsEnabled {
-		sources = append(sources, source.NewEuronics(httpClient, flareSolverr, cfg.EuronicsURL))
+		sources = append(sources, source.NewEuronics(httpClient, flareSolverr, cfg.EuronicsURLs))
 	}
 	if cfg.GlobusEnabled {
-		sources = append(sources, source.NewGlobus(httpClient, flareSolverr, cfg.GlobusURL))
+		sources = append(sources, source.NewGlobus(httpClient, flareSolverr, cfg.GlobusURLs))
 	}
 	if cfg.AmazonEnabled {
-		sources = append(sources, source.NewAmazon(httpClient, flareSolverr, cfg.AmazonURL))
+		sources = append(sources, source.NewAmazon(httpClient, flareSolverr, cfg.AmazonURLs))
 	}
 	if cfg.BauhausEnabled {
-		sources = append(sources, source.NewBauhaus(httpClient, flareSolverr, cfg.BauhausURL))
+		sources = append(sources, source.NewBauhaus(httpClient, flareSolverr, cfg.BauhausURLs))
 	}
 	if cfg.HagebauEnabled {
-		sources = append(sources, source.NewHagebau(httpClient, flareSolverr, cfg.HagebauURL))
+		sources = append(sources, source.NewHagebau(httpClient, flareSolverr, cfg.HagebauURLs))
 	}
 	if cfg.HornbachEnabled {
-		sources = append(sources, source.NewHornbach(httpClient, flareSolverr, cfg.HornbachURL))
+		sources = append(sources, source.NewHornbach(httpClient, flareSolverr, cfg.HornbachURLs))
 	}
 	if cfg.ToomEnabled {
-		sources = append(sources, source.NewToom(httpClient, flareSolverr, cfg.ToomURL))
+		sources = append(sources, source.NewToom(httpClient, flareSolverr, cfg.ToomURLs))
 	}
 	if cfg.BauhausStoreEnabled {
 		if flareSolverr == nil {
 			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")
 		} else {
-			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreID, cfg.BauhausStoreName))
+			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreProductIDs, cfg.BauhausStoreIDs, cfg.BauhausStoreName))
 		}
 	}
 

@@ -16,17 +16,27 @@ func writeConfig(t *testing.T, body string) string {
 	return p
 }
 
-func TestLoadDefaultsAndOverrides(t *testing.T) {
+func TestLoadReadsValuesVerbatim(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "tok")
 	t.Setenv("PUSHOVER_USER", "usr")
 
-	// Minimal file: overrides a few keys; everything else keeps defaults.
+	// Values are read exactly as written; there are no built-in defaults.
 	p := writeConfig(t, `
 checkInterval: 10m
+httpTimeout: 15s
+priceMax: 900
 homePLZ: "60311"
+localPLZPrefixes: ["60", "63"]
+pushover:
+  priority: 2
 sources:
   amazon:
     enabled: false
+  mediamarkt:
+    enabled: true
+    urls:
+      - https://example.com/a
+      - https://example.com/b
 `)
 	cfg, err := Load(p)
 	if err != nil {
@@ -36,21 +46,24 @@ sources:
 	if cfg.CheckInterval != 10*time.Minute {
 		t.Errorf("CheckInterval = %v, want 10m", cfg.CheckInterval)
 	}
-	if cfg.HTTPTimeout != 30*time.Second {
-		t.Errorf("HTTPTimeout default lost: %v", cfg.HTTPTimeout)
+	if cfg.HTTPTimeout != 15*time.Second {
+		t.Errorf("HTTPTimeout = %v, want 15s", cfg.HTTPTimeout)
+	}
+	if cfg.PriceMax != 900 {
+		t.Errorf("PriceMax = %d, want 900", cfg.PriceMax)
+	}
+	if len(cfg.LocalPLZPrefixes) != 2 || cfg.LocalPLZPrefixes[0] != "60" {
+		t.Errorf("LocalPLZPrefixes = %v, want [60 63]", cfg.LocalPLZPrefixes)
 	}
 	if cfg.AmazonEnabled {
 		t.Errorf("amazon should be disabled")
 	}
-	if !cfg.BraucheKlimaEnabled {
-		t.Errorf("braucheklima should keep default enabled")
+	if len(cfg.MediaMarktURLs) != 2 {
+		t.Errorf("MediaMarktURLs = %v, want 2 entries", cfg.MediaMarktURLs)
 	}
-	// localPLZPrefixes not set -> derived from homePLZ region.
-	if len(cfg.LocalPLZPrefixes) != 1 || cfg.LocalPLZPrefixes[0] != "60" {
-		t.Errorf("LocalPLZPrefixes = %v, want [60]", cfg.LocalPLZPrefixes)
-	}
-	if cfg.PushoverPriority != 2 {
-		t.Errorf("PushoverPriority default = %d, want 2", cfg.PushoverPriority)
+	// No defaults: an unspecified source stays disabled with empty fields.
+	if cfg.BraucheKlimaEnabled || len(cfg.BraucheKlimaProducts) != 0 {
+		t.Errorf("unspecified braucheklima should be zero-valued, got enabled=%v products=%v", cfg.BraucheKlimaEnabled, cfg.BraucheKlimaProducts)
 	}
 	if cfg.PushoverToken != "tok" || cfg.PushoverUser != "usr" {
 		t.Errorf("secrets not loaded from env")
@@ -60,9 +73,19 @@ sources:
 func TestLoadMissingSecrets(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "")
 	t.Setenv("PUSHOVER_USER", "")
-	p := writeConfig(t, "checkInterval: 5m\n")
+	p := writeConfig(t, "checkInterval: 5m\nsources:\n  obi:\n    enabled: true\n")
 	if _, err := Load(p); err == nil {
 		t.Fatal("expected error for missing Pushover secrets")
+	}
+}
+
+func TestLoadMissingCheckInterval(t *testing.T) {
+	t.Setenv("PUSHOVER_TOKEN", "tok")
+	t.Setenv("PUSHOVER_USER", "usr")
+	// No checkInterval -> zero -> validation error (no default fills it in).
+	p := writeConfig(t, "sources:\n  obi:\n    enabled: true\n")
+	if _, err := Load(p); err == nil {
+		t.Fatal("expected error for missing checkInterval")
 	}
 }
 

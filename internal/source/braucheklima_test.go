@@ -32,7 +32,7 @@ func TestBraucheKlimaChannelClassification(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	src := NewBraucheKlima(srv.Client(), nil, srv.URL, "Midea Portasplit")
+	src := NewBraucheKlima(srv.Client(), nil, srv.URL, []string{"Midea Portasplit"})
 	got, err := src.Check(context.Background())
 	if err != nil {
 		t.Fatalf("Check: %v", err)

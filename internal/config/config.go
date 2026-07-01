@@ -26,43 +26,44 @@ type Config struct {
 	PushoverRetry    int
 	PushoverExpire   int
 
-	BraucheKlimaEnabled bool
-	BraucheKlimaURL     string
-	BraucheKlimaProduct string
+	BraucheKlimaEnabled  bool
+	BraucheKlimaURL      string
+	BraucheKlimaProducts []string
 
 	FlareSolverrURL     string
 	FlareSolverrTimeout time.Duration
 
-	ObiEnabled   bool
-	ObiProductID string
+	ObiEnabled    bool
+	ObiProductIDs []string
 
 	MediaMarktEnabled bool
-	MediaMarktURL     string
+	MediaMarktURLs    []string
 
 	EuronicsEnabled bool
-	EuronicsURL     string
+	EuronicsURLs    []string
 
 	GlobusEnabled bool
-	GlobusURL     string
+	GlobusURLs    []string
 
 	AmazonEnabled bool
-	AmazonURL     string
+	AmazonURLs    []string
 
 	BauhausEnabled bool
-	BauhausURL     string
+	BauhausURLs    []string
 
 	HagebauEnabled bool
-	HagebauURL     string
+	HagebauURLs    []string
 
 	HornbachEnabled bool
-	HornbachURL     string
+	HornbachURLs    []string
 
 	ToomEnabled bool
-	ToomURL     string
+	ToomURLs    []string
 
-	BauhausStoreEnabled bool
-	BauhausStoreID      string
-	BauhausStoreName    string
+	BauhausStoreEnabled    bool
+	BauhausStoreProductIDs []string
+	BauhausStoreIDs        []string
+	BauhausStoreName       string
 
 	HomePLZ          string
 	LocalPLZPrefixes []string
@@ -84,11 +85,11 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	return nil
 }
 
-// sourceFile is the YAML shape for a page-check source (URL optional; empty uses
+// sourceFile is the YAML shape for a page-check source (urls optional; empty uses
 // the source's built-in default).
 type sourceFile struct {
-	Enabled bool   `yaml:"enabled"`
-	URL     string `yaml:"url"`
+	Enabled bool     `yaml:"enabled"`
+	URLs    []string `yaml:"urls"`
 }
 
 // fileConfig mirrors the YAML file. It is populated with defaults first, then the
@@ -116,13 +117,13 @@ type fileConfig struct {
 
 	Sources struct {
 		BraucheKlima struct {
-			Enabled bool   `yaml:"enabled"`
-			URL     string `yaml:"url"`
-			Product string `yaml:"product"`
+			Enabled  bool     `yaml:"enabled"`
+			URL      string   `yaml:"url"`
+			Products []string `yaml:"products"`
 		} `yaml:"braucheklima"`
 		Obi struct {
-			Enabled   bool   `yaml:"enabled"`
-			ProductID string `yaml:"productID"`
+			Enabled    bool     `yaml:"enabled"`
+			ProductIDs []string `yaml:"productIDs"`
 		} `yaml:"obi"`
 		MediaMarkt   sourceFile `yaml:"mediamarkt"`
 		Euronics     sourceFile `yaml:"euronics"`
@@ -133,61 +134,27 @@ type fileConfig struct {
 		Hornbach     sourceFile `yaml:"hornbach"`
 		Toom         sourceFile `yaml:"toom"`
 		BauhausStore struct {
-			Enabled   bool   `yaml:"enabled"`
-			StoreID   string `yaml:"storeID"`
-			StoreName string `yaml:"storeName"`
+			Enabled    bool     `yaml:"enabled"`
+			ProductIDs []string `yaml:"productIDs"`
+			StoreIDs   []string `yaml:"storeIDs"`
+			StoreName  string   `yaml:"storeName"`
 		} `yaml:"bauhausStore"`
 	} `yaml:"sources"`
 }
 
-func defaults() fileConfig {
-	var fc fileConfig
-	fc.CheckInterval = Duration(5 * time.Minute)
-	fc.HTTPTimeout = Duration(30 * time.Second)
-	fc.DBPath = "klima.db"
-	fc.MetricsAddr = ":8080"
-	fc.HomePLZ = "36037"
-
-	fc.Pushover.Priority = 2 // emergency
-	fc.Pushover.Retry = 60
-	fc.Pushover.Expire = 3600
-
-	fc.FlareSolverr.Timeout = Duration(60 * time.Second)
-
-	fc.Sources.BraucheKlima.Enabled = true
-	fc.Sources.BraucheKlima.URL = "https://braucheklima.de/api/availability"
-	fc.Sources.BraucheKlima.Product = "Midea Portasplit"
-	fc.Sources.Obi.Enabled = true
-	fc.Sources.Obi.ProductID = "8620890"
-	fc.Sources.MediaMarkt.Enabled = true
-	fc.Sources.Euronics.Enabled = true
-	fc.Sources.Globus.Enabled = true
-	fc.Sources.Amazon.Enabled = true
-	fc.Sources.Bauhaus.Enabled = true
-	fc.Sources.Hagebau.Enabled = true
-	fc.Sources.Hornbach.Enabled = true
-	fc.Sources.Toom.Enabled = true
-	fc.Sources.BauhausStore.Enabled = true
-	fc.Sources.BauhausStore.StoreID = "589"
-	fc.Sources.BauhausStore.StoreName = "Bauhaus Frankfurt"
-	return fc
-}
-
-// Load reads the YAML config at path (over built-in defaults) and overlays the
-// secrets from the environment. A .env file is loaded for convenience in dev.
+// Load reads the YAML config at path and overlays the secrets from the
+// environment. There are no built-in defaults: every value comes from the file
+// (a .env file is loaded only to source the Pushover secrets in dev).
 func Load(path string) (*Config, error) {
 	_ = godotenv.Load()
 
-	fc := defaults()
-	if data, err := os.ReadFile(path); err != nil {
+	var fc fileConfig
+	data, err := os.ReadFile(path)
+	if err != nil {
 		return nil, fmt.Errorf("read config %q: %w", path, err)
-	} else if err := yaml.Unmarshal(data, &fc); err != nil {
-		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
-
-	prefixes := fc.LocalPLZPrefixes
-	if len(prefixes) == 0 {
-		prefixes = plzRegion(fc.HomePLZ)
+	if err := yaml.Unmarshal(data, &fc); err != nil {
+		return nil, fmt.Errorf("parse config %q: %w", path, err)
 	}
 
 	cfg := &Config{
@@ -204,39 +171,40 @@ func Load(path string) (*Config, error) {
 		PushoverRetry:    fc.Pushover.Retry,
 		PushoverExpire:   fc.Pushover.Expire,
 
-		BraucheKlimaEnabled: fc.Sources.BraucheKlima.Enabled,
-		BraucheKlimaURL:     fc.Sources.BraucheKlima.URL,
-		BraucheKlimaProduct: fc.Sources.BraucheKlima.Product,
+		BraucheKlimaEnabled:  fc.Sources.BraucheKlima.Enabled,
+		BraucheKlimaURL:      fc.Sources.BraucheKlima.URL,
+		BraucheKlimaProducts: fc.Sources.BraucheKlima.Products,
 
 		FlareSolverrURL:     fc.FlareSolverr.URL,
 		FlareSolverrTimeout: time.Duration(fc.FlareSolverr.Timeout),
 
-		ObiEnabled:   fc.Sources.Obi.Enabled,
-		ObiProductID: fc.Sources.Obi.ProductID,
+		ObiEnabled:    fc.Sources.Obi.Enabled,
+		ObiProductIDs: fc.Sources.Obi.ProductIDs,
 
 		MediaMarktEnabled: fc.Sources.MediaMarkt.Enabled,
-		MediaMarktURL:     fc.Sources.MediaMarkt.URL,
+		MediaMarktURLs:    fc.Sources.MediaMarkt.URLs,
 		EuronicsEnabled:   fc.Sources.Euronics.Enabled,
-		EuronicsURL:       fc.Sources.Euronics.URL,
+		EuronicsURLs:      fc.Sources.Euronics.URLs,
 		GlobusEnabled:     fc.Sources.Globus.Enabled,
-		GlobusURL:         fc.Sources.Globus.URL,
+		GlobusURLs:        fc.Sources.Globus.URLs,
 		AmazonEnabled:     fc.Sources.Amazon.Enabled,
-		AmazonURL:         fc.Sources.Amazon.URL,
+		AmazonURLs:        fc.Sources.Amazon.URLs,
 		BauhausEnabled:    fc.Sources.Bauhaus.Enabled,
-		BauhausURL:        fc.Sources.Bauhaus.URL,
+		BauhausURLs:       fc.Sources.Bauhaus.URLs,
 		HagebauEnabled:    fc.Sources.Hagebau.Enabled,
-		HagebauURL:        fc.Sources.Hagebau.URL,
+		HagebauURLs:       fc.Sources.Hagebau.URLs,
 		HornbachEnabled:   fc.Sources.Hornbach.Enabled,
-		HornbachURL:       fc.Sources.Hornbach.URL,
+		HornbachURLs:      fc.Sources.Hornbach.URLs,
 		ToomEnabled:       fc.Sources.Toom.Enabled,
-		ToomURL:           fc.Sources.Toom.URL,
+		ToomURLs:          fc.Sources.Toom.URLs,
 
-		BauhausStoreEnabled: fc.Sources.BauhausStore.Enabled,
-		BauhausStoreID:      fc.Sources.BauhausStore.StoreID,
-		BauhausStoreName:    fc.Sources.BauhausStore.StoreName,
+		BauhausStoreEnabled:    fc.Sources.BauhausStore.Enabled,
+		BauhausStoreProductIDs: fc.Sources.BauhausStore.ProductIDs,
+		BauhausStoreIDs:        fc.Sources.BauhausStore.StoreIDs,
+		BauhausStoreName:       fc.Sources.BauhausStore.StoreName,
 
 		HomePLZ:          fc.HomePLZ,
-		LocalPLZPrefixes: prefixes,
+		LocalPLZPrefixes: fc.LocalPLZPrefixes,
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -255,17 +223,6 @@ func (c *Config) validate() error {
 	}
 	if c.CheckInterval <= 0 {
 		return fmt.Errorf("checkInterval must be a positive duration")
-	}
-	return nil
-}
-
-// plzRegion returns a postal code's first two digits, e.g. "36037" -> "36".
-func plzRegion(plz string) []string {
-	if len(plz) >= 2 {
-		return []string{plz[:2]}
-	}
-	if plz != "" {
-		return []string{plz}
 	}
 	return nil
 }

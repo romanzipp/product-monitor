@@ -2,18 +2,12 @@ package source
 
 import "net/http"
 
-const hagebauDefaultURL = "https://www.hagebau.de/p/midea-klimaanlage-portasplit-anP7004600334/"
-
-// HagebauSource checks the Hagebau product page (online; needs FlareSolverr).
-// While sold out the page 404s, handled by the token guard.
+// HagebauSource checks Hagebau product pages (online availability only; needs FlareSolverr).
 type HagebauSource struct {
 	webCheck
 }
 
-// NewHagebau builds a Hagebau source; an empty url uses the default page.
-func NewHagebau(client *http.Client, fs *FlareSolverr, url string) *HagebauSource {
-	if url == "" {
-		url = hagebauDefaultURL
-	}
-	return &HagebauSource{newSchemaCheck("hagebau", client, fs, url, "Hagebau")}
+// NewHagebau builds a Hagebau source for the given product URLs.
+func NewHagebau(client *http.Client, fs *FlareSolverr, urls []string) *HagebauSource {
+	return &HagebauSource{newSchemaCheck("hagebau", client, fs, urls, "Hagebau")}
 }

@@ -65,7 +65,7 @@ func TestMediaMarktAvailability(t *testing.T) {
 			srv := newPageServer(t, tc.html)
 			defer srv.Close()
 
-			src := NewMediaMarkt(srv.Client(), nil, srv.URL+"/p_"+mmToken+".html")
+			src := NewMediaMarkt(srv.Client(), nil, []string{srv.URL + "/p_" + mmToken + ".html"})
 			got, err := src.Check(context.Background())
 			if err != nil {
 				t.Fatalf("Check: %v", err)
