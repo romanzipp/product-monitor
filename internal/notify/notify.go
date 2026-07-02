@@ -103,6 +103,10 @@ func formatMessage(a model.Availability) string {
 		fmt.Fprintf(&b, "Price: n/a\n")
 	}
 	fmt.Fprintf(&b, "Stock: %d\n", a.Stock)
+	// For in-store pickup, name the branch (the title only has the store name).
+	if a.Channel == model.ChannelInStore && a.Location != "" {
+		fmt.Fprintf(&b, "Filiale: %s\n", a.Location)
+	}
 	if a.URL != "" {
 		fmt.Fprintf(&b, "%s via %s", a.URL, a.Source)
 	} else {
