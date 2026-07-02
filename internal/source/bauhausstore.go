@@ -5,67 +5,56 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
-	"sync"
-	"time"
 
 	"product-monitor/internal/model"
 )
 
-// bauhausStoreReferer is a same-origin Bauhaus page used to bootstrap the
-// Cloudflare session (cf_clearance) and as the XHR Referer; it is not the
-// monitored product (those come from config as productIDs).
+// bauhausStoreReferer is a same-origin Bauhaus product page, used as the click-through
+// URL in notifications (the monitored products come from config as productIDs).
 const bauhausStoreReferer = "https://www.bauhaus.info/klimaanlagen/midea-klimasplitgeraet-portasplit-12000-btu/p/31934233"
-const bauhausSessionTTL = 15 * time.Minute
 
-// BauhausStoreSource checks in-store (pickup) availability for Bauhaus products
-// and stores via the /api/purchasability endpoint (one call per product×store).
-// The endpoint sits behind Cloudflare and only answers XHR requests, so a
-// FlareSolverr session (cf_clearance cookie + user agent) is harvested and the
-// API is then called directly. Replay requires the app and FlareSolverr to share
-// an egress IP (cf_clearance is IP-bound).
+// BauhausStore is one physical Bauhaus store to check (numeric id + display name).
+type BauhausStore struct {
+	ID   string
+	Name string
+}
+
+// BauhausStoreSource checks in-store (pickup) availability for Bauhaus products and
+// stores via the /api/purchasability endpoint (one call per product×store). The
+// endpoint sits behind Cloudflare, so every call is routed through FlareSolverr,
+// whose real browser carries the required TLS fingerprint and cf_clearance.
 type BauhausStoreSource struct {
-	client     *http.Client
+	client     *http.Client // unused; kept for a uniform constructor signature
 	fs         *FlareSolverr
 	productIDs []string
-	storeIDs   []string
-	storeName  string
-
-	mu        sync.Mutex
-	cookie    string
-	userAgent string
-	sessionAt time.Time
+	stores     []BauhausStore
 }
 
 // NewBauhausStore builds a source for the given Bauhaus products and stores.
 // Needs FlareSolverr.
-func NewBauhausStore(client *http.Client, fs *FlareSolverr, productIDs, storeIDs []string, storeName string) *BauhausStoreSource {
+func NewBauhausStore(client *http.Client, fs *FlareSolverr, productIDs []string, stores []BauhausStore) *BauhausStoreSource {
 	return &BauhausStoreSource{
 		client:     client,
 		fs:         fs,
 		productIDs: productIDs,
-		storeIDs:   storeIDs,
-		storeName:  storeName,
+		stores:     stores,
 	}
 }
 
 func (s *BauhausStoreSource) Name() string { return "bauhaus-store" }
 
 func (s *BauhausStoreSource) Check(ctx context.Context) ([]model.Availability, error) {
-	out := make([]model.Availability, 0, len(s.storeIDs))
+	out := make([]model.Availability, 0, len(s.stores))
 	var errs []error
 	for _, productID := range s.productIDs {
-		for _, storeID := range s.storeIDs {
-			pr, err := s.query(ctx, productID, storeID, false)
+		for _, store := range s.stores {
+			pr, err := s.query(ctx, productID, store.ID)
 			if err != nil {
-				// A stale/invalid session yields a 403 HTML page; refresh and retry once.
-				if pr, err = s.query(ctx, productID, storeID, true); err != nil {
-					errs = append(errs, err)
-					continue
-				}
+				errs = append(errs, fmt.Errorf("store %s: %w", store.ID, err))
+				continue
 			}
-			out = append(out, s.build(productID, storeID, pr)...)
+			out = append(out, s.build(productID, store, pr)...)
 		}
 	}
 	if len(out) == 0 && len(errs) > 0 {
@@ -76,7 +65,7 @@ func (s *BauhausStoreSource) Check(ctx context.Context) ([]model.Availability, e
 
 // build maps a purchasability response to in-store availability, keeping only the
 // STORE result when it is purchasable.
-func (s *BauhausStoreSource) build(productID, storeID string, pr *bauhausPurchasability) []model.Availability {
+func (s *BauhausStoreSource) build(productID string, store BauhausStore, pr *bauhausPurchasability) []model.Availability {
 	out := make([]model.Availability, 0, 1)
 	for _, r := range pr.Results {
 		if r.Kind != "STORE" || !r.Purchasable {
@@ -88,14 +77,14 @@ func (s *BauhausStoreSource) build(productID, storeID string, pr *bauhausPurchas
 		}
 		out = append(out, model.Availability{
 			Source:      s.Name(),
-			StoreName:   s.storeName,
+			StoreName:   store.Name,
 			ProductName: "Midea PortaSplit",
 			Stock:       stock,
 			URL:         bauhausStoreReferer,
-			Location:    s.storeName,
+			Location:    store.Name,
 			Channel:     model.ChannelInStore,
 			Targeted:    true,
-			Key:         "bauhaus-store:" + storeID + ":" + productID,
+			Key:         "bauhaus-store:" + store.ID + ":" + productID,
 		})
 	}
 	return out
@@ -110,60 +99,16 @@ type bauhausPurchasability struct {
 	} `json:"results"`
 }
 
-// query calls the purchasability API for one product+store with the (cached) session.
-func (s *BauhausStoreSource) query(ctx context.Context, productID, storeID string, refresh bool) (*bauhausPurchasability, error) {
-	cookie, ua, err := s.session(ctx, refresh)
-	if err != nil {
-		return nil, err
-	}
-
+// query calls the purchasability API for one product+store through FlareSolverr.
+func (s *BauhausStoreSource) query(ctx context.Context, productID, storeID string) (*bauhausPurchasability, error) {
 	url := fmt.Sprintf("https://www.bauhaus.info/api/purchasability?productId=%s&quantity=1&storeId=%s", productID, storeID)
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	body, err := s.fs.Get(ctx, url)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("User-Agent", ua)
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Accept-Language", "de-DE,de;q=0.9")
-	req.Header.Set("Referer", bauhausStoreReferer)
-	req.Header.Set("Sec-Fetch-Dest", "empty")
-	req.Header.Set("Sec-Fetch-Mode", "cors")
-	req.Header.Set("Sec-Fetch-Site", "same-origin")
-	req.Header.Set("Cookie", cookie)
-
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("purchasability status %d", resp.StatusCode)
-	}
-
 	var pr bauhausPurchasability
 	if err := json.Unmarshal(body, &pr); err != nil {
 		return nil, fmt.Errorf("decode: %w", err)
 	}
 	return &pr, nil
-}
-
-// session returns a cached cookie header + user agent, harvesting a fresh one
-// via FlareSolverr when forced or expired.
-func (s *BauhausStoreSource) session(ctx context.Context, force bool) (string, string, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if !force && s.cookie != "" && time.Since(s.sessionAt) < bauhausSessionTTL {
-		return s.cookie, s.userAgent, nil
-	}
-	cookie, ua, err := s.fs.Session(ctx, bauhausStoreReferer)
-	if err != nil {
-		return "", "", err
-	}
-	s.cookie, s.userAgent, s.sessionAt = cookie, ua, time.Now()
-	return cookie, ua, nil
 }

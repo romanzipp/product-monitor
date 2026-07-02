@@ -181,12 +181,13 @@ sources:
     enabled: true
     urls:
       - https://gr-solar.de/produkt/midea-portasplit-klimaanlage-35-kw
-  # Bauhaus store pickup availability, checked per product×store (needs
-  # flaresolverr; product 31934233 = PortaSplit, store 589 = Frankfurt).
+  # Bauhaus store pickup availability, checked per product×store via the
+  # purchasability API (needs flaresolverr; product 31934233 = PortaSplit). Each
+  # store's numeric id is the "/fc/<id>" number from its bauhaus.info store page.
   bauhausStore:
     enabled: true
     productIDs:
       - "31934233"
-    storeIDs:
-      - "589"
-    storeName: Bauhaus Frankfurt
+    stores:
+      - id: "589"
+        name: Bauhaus Frankfurt

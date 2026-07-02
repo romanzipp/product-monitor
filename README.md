@@ -57,7 +57,7 @@ products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
 | `entratek` | entratek-shop.de product pages | `urls` | online |
 | `bobselektro` | bobselektro.de, delivery-badge check | `urls` | online |
 | `grsolar` | gr-solar.de product pages | `urls` | online |
-| `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `storeIDs` | in-store |
+| `bauhaus-store` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `stores` | in-store |
 
 Online retailers each have their own source (direct product-page check); the
 `braucheklima` feed contributes physical-store stock only, so online stores are

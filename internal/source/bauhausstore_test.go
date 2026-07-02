@@ -8,7 +8,8 @@ import (
 )
 
 func TestBauhausStoreBuild(t *testing.T) {
-	src := NewBauhausStore(nil, nil, []string{"31934233"}, []string{"589"}, "Bauhaus Frankfurt")
+	src := NewBauhausStore(nil, nil, []string{"31934233"}, []BauhausStore{{ID: "589", Name: "Bauhaus Frankfurt"}})
+	store := BauhausStore{ID: "589", Name: "Bauhaus Frankfurt"}
 
 	// Exact shape returned by the purchasability API (both out of stock).
 	const oos = `{"results":[{"amount":0,"code":"OOOS","kind":"ONLINE","product":"31934233","purchasable":false},{"amount":0,"code":"SOOS","kind":"STORE","product":"31934233","purchasable":false}]}`
@@ -22,11 +23,11 @@ func TestBauhausStoreBuild(t *testing.T) {
 		return &pr
 	}
 
-	if got := src.build("31934233", "589", parse(oos)); len(got) != 0 {
+	if got := src.build("31934233", store, parse(oos)); len(got) != 0 {
 		t.Fatalf("out of stock: want 0, got %d: %+v", len(got), got)
 	}
 
-	got := src.build("31934233", "589", parse(inStore))
+	got := src.build("31934233", store, parse(inStore))
 	if len(got) != 1 {
 		t.Fatalf("in store: want 1, got %d", len(got))
 	}

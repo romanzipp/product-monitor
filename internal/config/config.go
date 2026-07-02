@@ -133,10 +133,15 @@ type Config struct {
 
 	BauhausStoreEnabled    bool
 	BauhausStoreProductIDs []string
-	BauhausStoreIDs        []string
-	BauhausStoreName       string
+	BauhausStores          []BauhausStoreEntry
 
 	LocalPLZPrefixes []string
+}
+
+// BauhausStoreEntry is one physical Bauhaus store: its numeric id and a name.
+type BauhausStoreEntry struct {
+	ID   string
+	Name string
 }
 
 // Duration unmarshals a YAML duration string such as "5m" or "30s".
@@ -233,8 +238,10 @@ type fileConfig struct {
 		BauhausStore    struct {
 			Enabled    bool     `yaml:"enabled"`
 			ProductIDs []string `yaml:"productIDs"`
-			StoreIDs   []string `yaml:"storeIDs"`
-			StoreName  string   `yaml:"storeName"`
+			Stores     []struct {
+				ID   string `yaml:"id"`
+				Name string `yaml:"name"`
+			} `yaml:"stores"`
 		} `yaml:"bauhausStore"`
 	} `yaml:"sources"`
 }
@@ -252,6 +259,11 @@ func Load(path string) (*Config, error) {
 	}
 	if err := yaml.Unmarshal(data, &fc); err != nil {
 		return nil, fmt.Errorf("parse config %q: %w", path, err)
+	}
+
+	bauhausStores := make([]BauhausStoreEntry, len(fc.Sources.BauhausStore.Stores))
+	for i, st := range fc.Sources.BauhausStore.Stores {
+		bauhausStores[i] = BauhausStoreEntry{ID: st.ID, Name: st.Name}
 	}
 
 	cfg := &Config{
@@ -348,8 +360,7 @@ func Load(path string) (*Config, error) {
 
 		BauhausStoreEnabled:    fc.Sources.BauhausStore.Enabled,
 		BauhausStoreProductIDs: fc.Sources.BauhausStore.ProductIDs,
-		BauhausStoreIDs:        fc.Sources.BauhausStore.StoreIDs,
-		BauhausStoreName:       fc.Sources.BauhausStore.StoreName,
+		BauhausStores:          bauhausStores,
 
 		LocalPLZPrefixes: fc.LocalPLZPrefixes,
 	}

@@ -164,7 +164,11 @@ func main() {
 		if flareSolverr == nil {
 			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")
 		} else {
-			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreProductIDs, cfg.BauhausStoreIDs, cfg.BauhausStoreName))
+			stores := make([]source.BauhausStore, len(cfg.BauhausStores))
+			for i, st := range cfg.BauhausStores {
+				stores[i] = source.BauhausStore{ID: st.ID, Name: st.Name}
+			}
+			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreProductIDs, stores))
 		}
 	}
 
