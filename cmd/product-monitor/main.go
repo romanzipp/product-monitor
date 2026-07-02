@@ -61,7 +61,7 @@ func main() {
 		sources = append(sources, source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProducts))
 	}
 	if cfg.ObiEnabled {
-		sources = append(sources, source.NewObi(httpClient, cfg.ObiProductIDs, cfg.HomePLZ))
+		sources = append(sources, source.NewObi(httpClient, cfg.ObiProductIDs, cfg.ObiPostalCodes))
 	}
 	if cfg.MediaMarktEnabled {
 		sources = append(sources, source.NewMediaMarkt(httpClient, flareSolverr, cfg.MediaMarktURLs))

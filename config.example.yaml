@@ -10,10 +10,9 @@ dbPath: klima.db            # container/prod: /data/product-monitor.db
 metricsAddr: ":8080"        # Prometheus /metrics listen address
 priceMax: 0                 # ignore offers above this many euros; 0 = no limit
 
-# Reference location. OBI queries against homePLZ and the in-store filter
-# prefixes default to its region (first two digits). localPLZPrefixes keeps an
-# in-store result only if its PLZ starts with one of these; online is unaffected.
-homePLZ: "36037"
+# localPLZPrefixes keeps an in-store result only if its PLZ starts with one of
+# these; online is unaffected. OBI is queried per configured postalCode (see
+# sources.obi.postalCodes) and bypasses this filter.
 localPLZPrefixes: ["36"]
 
 pushover:
@@ -41,6 +40,8 @@ sources:
     enabled: true
     productIDs:
       - "8620890"
+    postalCodes:        # OBI availability is checked for each of these PLZ
+      - "36037"
   mediamarkt:
     enabled: true
     urls:

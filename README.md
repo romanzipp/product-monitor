@@ -25,7 +25,7 @@ products (multiple `urls`, `productIDs`, `products`, or `storeIDs`).
 | Source | What it polls | Config | Channels |
 | --- | --- | --- | --- |
 | `braucheklima` | aggregated feed, ~1200 physical stores | `url` + `products` | in-store only |
-| `obi` | `obi.de` availability API | `productIDs` | online + in-store |
+| `obi` | `obi.de` availability API, per postal code | `productIDs` + `postalCodes` | online + in-store |
 | `mediamarkt` | MediaMarkt product pages | `urls` | online |
 | `euronics` | Euronics product pages | `urls` | online |
 | `globus` | Globus Baumarkt product pages | `urls` | online |

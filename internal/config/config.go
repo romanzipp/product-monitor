@@ -33,8 +33,9 @@ type Config struct {
 	FlareSolverrURL     string
 	FlareSolverrTimeout time.Duration
 
-	ObiEnabled    bool
-	ObiProductIDs []string
+	ObiEnabled     bool
+	ObiProductIDs  []string
+	ObiPostalCodes []string
 
 	MediaMarktEnabled bool
 	MediaMarktURLs    []string
@@ -135,7 +136,6 @@ type Config struct {
 	BauhausStoreIDs        []string
 	BauhausStoreName       string
 
-	HomePLZ          string
 	LocalPLZPrefixes []string
 }
 
@@ -170,7 +170,6 @@ type fileConfig struct {
 	DBPath           string   `yaml:"dbPath"`
 	MetricsAddr      string   `yaml:"metricsAddr"`
 	PriceMax         int      `yaml:"priceMax"`
-	HomePLZ          string   `yaml:"homePLZ"`
 	LocalPLZPrefixes []string `yaml:"localPLZPrefixes"`
 
 	Pushover struct {
@@ -192,8 +191,9 @@ type fileConfig struct {
 			Products []string `yaml:"products"`
 		} `yaml:"braucheklima"`
 		Obi struct {
-			Enabled    bool     `yaml:"enabled"`
-			ProductIDs []string `yaml:"productIDs"`
+			Enabled     bool     `yaml:"enabled"`
+			ProductIDs  []string `yaml:"productIDs"`
+			PostalCodes []string `yaml:"postalCodes"`
 		} `yaml:"obi"`
 		MediaMarkt sourceFile `yaml:"mediamarkt"`
 		Euronics   sourceFile `yaml:"euronics"`
@@ -275,8 +275,9 @@ func Load(path string) (*Config, error) {
 		FlareSolverrURL:     fc.FlareSolverr.URL,
 		FlareSolverrTimeout: time.Duration(fc.FlareSolverr.Timeout),
 
-		ObiEnabled:    fc.Sources.Obi.Enabled,
-		ObiProductIDs: fc.Sources.Obi.ProductIDs,
+		ObiEnabled:     fc.Sources.Obi.Enabled,
+		ObiProductIDs:  fc.Sources.Obi.ProductIDs,
+		ObiPostalCodes: fc.Sources.Obi.PostalCodes,
 
 		MediaMarktEnabled: fc.Sources.MediaMarkt.Enabled,
 		MediaMarktURLs:    fc.Sources.MediaMarkt.URLs,
@@ -350,7 +351,6 @@ func Load(path string) (*Config, error) {
 		BauhausStoreIDs:        fc.Sources.BauhausStore.StoreIDs,
 		BauhausStoreName:       fc.Sources.BauhausStore.StoreName,
 
-		HomePLZ:          fc.HomePLZ,
 		LocalPLZPrefixes: fc.LocalPLZPrefixes,
 	}
 
