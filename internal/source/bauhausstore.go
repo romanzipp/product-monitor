@@ -5,14 +5,23 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"sync"
+	"time"
+
+	fhttp "github.com/bogdanfinn/fhttp"
+	tls_client "github.com/bogdanfinn/tls-client"
+	"github.com/bogdanfinn/tls-client/profiles"
 
 	"product-monitor/internal/model"
 )
 
-// bauhausStoreReferer is a same-origin Bauhaus product page, used as the click-through
-// URL in notifications (the monitored products come from config as productIDs).
+// bauhausStoreReferer is a same-origin Bauhaus product page: it is used to harvest
+// the Cloudflare session (cf_clearance) via FlareSolverr, as the XHR Referer, and
+// as the click-through URL in notifications (monitored products come from config).
 const bauhausStoreReferer = "https://www.bauhaus.info/klimaanlagen/midea-klimasplitgeraet-portasplit-12000-btu/p/31934233"
+const bauhausSessionTTL = 15 * time.Minute
 
 // BauhausStore is one physical Bauhaus store to check (numeric id + display name).
 type BauhausStore struct {
@@ -22,23 +31,39 @@ type BauhausStore struct {
 
 // BauhausStoreSource checks in-store (pickup) availability for Bauhaus products and
 // stores via the /api/purchasability endpoint (one call per product×store). The
-// endpoint sits behind Cloudflare, so every call is routed through FlareSolverr,
-// whose real browser carries the required TLS fingerprint and cf_clearance.
+// endpoint is JSON-over-XHR behind Cloudflare: FlareSolverr solves the challenge and
+// yields a cf_clearance cookie, but the API also validates the TLS (JA3) fingerprint,
+// so the call is replayed with a Chrome-impersonating tls-client rather than the Go
+// stdlib client (which gets a 403). cf_clearance is IP-bound, so the app and
+// FlareSolverr must share an egress IP.
 type BauhausStoreSource struct {
-	client     *http.Client // unused; kept for a uniform constructor signature
 	fs         *FlareSolverr
 	productIDs []string
 	stores     []BauhausStore
+	tls        tls_client.HttpClient
+
+	mu        sync.Mutex
+	cookie    string
+	userAgent string
+	sessionAt time.Time
 }
 
 // NewBauhausStore builds a source for the given Bauhaus products and stores.
 // Needs FlareSolverr.
 func NewBauhausStore(client *http.Client, fs *FlareSolverr, productIDs []string, stores []BauhausStore) *BauhausStoreSource {
+	opts := []tls_client.HttpClientOption{
+		tls_client.WithTimeoutSeconds(30),
+		tls_client.WithClientProfile(profiles.Chrome_133),
+	}
+	tlsClient, err := tls_client.NewHttpClient(tls_client.NewNoopLogger(), opts...)
+	if err != nil {
+		tlsClient = nil // query() surfaces this as an error per cycle
+	}
 	return &BauhausStoreSource{
-		client:     client,
 		fs:         fs,
 		productIDs: productIDs,
 		stores:     stores,
+		tls:        tlsClient,
 	}
 }
 
@@ -49,10 +74,13 @@ func (s *BauhausStoreSource) Check(ctx context.Context) ([]model.Availability, e
 	var errs []error
 	for _, productID := range s.productIDs {
 		for _, store := range s.stores {
-			pr, err := s.query(ctx, productID, store.ID)
+			pr, err := s.query(ctx, productID, store.ID, false)
 			if err != nil {
-				errs = append(errs, fmt.Errorf("store %s: %w", store.ID, err))
-				continue
+				// A stale session yields a 403; refresh cf_clearance and retry once.
+				if pr, err = s.query(ctx, productID, store.ID, true); err != nil {
+					errs = append(errs, fmt.Errorf("store %s: %w", store.ID, err))
+					continue
+				}
 			}
 			out = append(out, s.build(productID, store, pr)...)
 		}
@@ -99,16 +127,67 @@ type bauhausPurchasability struct {
 	} `json:"results"`
 }
 
-// query calls the purchasability API for one product+store through FlareSolverr.
-func (s *BauhausStoreSource) query(ctx context.Context, productID, storeID string) (*bauhausPurchasability, error) {
-	url := fmt.Sprintf("https://www.bauhaus.info/api/purchasability?productId=%s&quantity=1&storeId=%s", productID, storeID)
-	body, err := s.fs.Get(ctx, url)
+// query calls the purchasability API for one product+store, replaying the
+// FlareSolverr-harvested Cloudflare session with a Chrome TLS fingerprint.
+func (s *BauhausStoreSource) query(ctx context.Context, productID, storeID string, refresh bool) (*bauhausPurchasability, error) {
+	if s.tls == nil {
+		return nil, errors.New("tls-client unavailable")
+	}
+	cookie, ua, err := s.session(ctx, refresh)
 	if err != nil {
 		return nil, err
 	}
+
+	url := fmt.Sprintf("https://www.bauhaus.info/api/purchasability?productId=%s&quantity=1&storeId=%s", productID, storeID)
+	req, err := fhttp.NewRequestWithContext(ctx, fhttp.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header = fhttp.Header{
+		"accept":           {"application/json, text/plain, */*"},
+		"accept-language":  {"de-DE,de;q=0.9"},
+		"user-agent":       {ua},
+		"referer":          {bauhausStoreReferer},
+		"x-requested-with": {"XMLHttpRequest"},
+		"sec-fetch-dest":   {"empty"},
+		"sec-fetch-mode":   {"cors"},
+		"sec-fetch-site":   {"same-origin"},
+		"cookie":           {cookie},
+	}
+
+	resp, err := s.tls.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("purchasability status %d", resp.StatusCode)
+	}
+
 	var pr bauhausPurchasability
 	if err := json.Unmarshal(body, &pr); err != nil {
 		return nil, fmt.Errorf("decode: %w", err)
 	}
 	return &pr, nil
+}
+
+// session returns a cached cookie header + user agent, harvesting a fresh one via
+// FlareSolverr when forced or expired.
+func (s *BauhausStoreSource) session(ctx context.Context, force bool) (string, string, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !force && s.cookie != "" && time.Since(s.sessionAt) < bauhausSessionTTL {
+		return s.cookie, s.userAgent, nil
+	}
+	cookie, ua, err := s.fs.Session(ctx, bauhausStoreReferer)
+	if err != nil {
+		return "", "", err
+	}
+	s.cookie, s.userAgent, s.sessionAt = cookie, ua, time.Now()
+	return cookie, ua, nil
 }
