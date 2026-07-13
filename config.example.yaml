@@ -1,8 +1,7 @@
 # product-monitor configuration.
 # Copy to config.yaml and run: `make run` (or mount it in Docker/Kubernetes).
 # Secrets are NOT set here — PUSHOVER_TOKEN and PUSHOVER_USER come from the
-# environment (or a .env file). Every field below is optional; omitted keys fall
-# back to the defaults shown.
+# environment (or a .env file). There are no built-in defaults.
 
 checkInterval: 5m
 httpTimeout: 30s
@@ -11,8 +10,8 @@ metricsAddr: ":8080"        # Prometheus /metrics listen address
 priceMax: 0                 # ignore offers above this many euros; 0 = no limit
 
 # localPLZPrefixes keeps an in-store result only if its PLZ starts with one of
-# these; online is unaffected. OBI is queried per configured postalCode (see
-# sources.obi.postalCodes) and bypasses this filter.
+# these; online is unaffected. OBI is queried per configured postalCode and
+# bypasses this filter.
 localPLZPrefixes: ["36"]
 
 pushover:
@@ -27,167 +26,44 @@ flaresolverr:
   url: ""
   timeout: 60s
 
-# Each source accepts a list, so one source can watch multiple products. There
-# are no built-in defaults: a source with an empty list checks nothing.
-sources:
-  braucheklima:
-    enabled: true
-    url: https://braucheklima.de/api/availability
-    products:
-      - Midea Portasplit
-      # - Midea Portasplit Cool
-  obi:
-    enabled: true
-    productIDs:
-      - "8620890"
-    postalCodes:        # OBI availability is checked for each of these PLZ
-      - "36037"
-  mediamarkt:
-    enabled: true
-    urls:
-      - https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html
-  euronics:
-    enabled: true
-    urls:
-      - https://www.euronics.de/haus-und-haushalt/heizen-lueften-kuehlen/kuehlen/split-klimageraete/porta-split-split-klimageraet-a-4065327878899
-  globus:
-    enabled: true
-    urls:
-      - https://www.globus-baumarkt.de/p/midea-portasplit-mobile-split-klimaanlage-12000-btu-heiz-kuehlfunktion-0694600235/
-  amazon:
-    enabled: true
-    urls:
-      - https://www.amazon.de/dp/B0D3PP64JS
-  bauhaus:
-    enabled: true
-    urls:
-      - https://www.bauhaus.info/p/31934233
-  hagebau:
-    enabled: true
-    urls:
-      - https://www.hagebau.de/p/midea-klimaanlage-portasplit-anP7004600334/
-  hornbach:
-    enabled: true
-    urls:
-      - https://www.hornbach.de/p/klimasplitgeraet-midea-portasplit-12-000-btu-105-m-weiss/12356554/
-  toom:
-    enabled: true
-    urls:
-      - https://toom.de/p/mobiles-klimageraet-portasplit-12000-btuh/9350668
-  solarprofi:
-    enabled: true
-    urls:
-      - https://shop.solarprofi-24.de/haustechnik/7212/midea-mobiles-split-klimageraet-porta-split-3-5-kw-r-32-raumklimageraet-4-in-1-komfort
-  # Galaxus is behind Akamai + CAPTCHA; it only works through flaresolverr and may
-  # still be blocked. Availability read from schema.org JSON-LD.
-  galaxus:
-    enabled: true
-    urls:
-      - https://www.galaxus.de/de/s2/product/midea-porta-split-42-m-12000-btuh-klimaanlage-40851329
-  solario24:
-    enabled: true
-    urls:
-      - https://www.solario24.com/de/produkt/midea-portasplit-cool-mobile-split-klimaanlage-235-kw-8-000-btu-ohne-feste-installation-a/
-  evolarshop:
-    enabled: true
-    urls:
-      - https://www.evolarshop.de/midea-portasplit-mobile-split-airco-12000btu-kuhlen-heizen-zweite-chance-1
-  # Büromarkt AG is behind Imperva/Incapsula; route through flaresolverr.
-  bueromarkt:
-    enabled: true
-    urls:
-      - https://www.bueromarkt-ag.de/klimageraet_midea_portasplit_12000_btuh,p-11647.html
-  # expert.de reads its price/stock JSON API. storeId can be any valid expert store
-  # id; the online availability it returns is store-independent.
-  expert:
-    enabled: true
-    storeId: e_2879130
-    urls:
-      - https://www.expert.de/shop/unsere-produkte/haushalt-kuche/wohnklima/klimagerate/32750011559-portasplit-mobile-split-klimaanlage.html
-  prosatech:
-    enabled: true
-    urls:
-      - https://prosatech.de/Mobile-Klimaanlage-Midea-PortaSplit-35kw
-  tado:
-    enabled: true
-    urls:
-      - https://shop.tado.com/products/midea-portasplit-mobile-split-air-conditioner-3-5-kw-tado-smart-ac-control-v3
-  solarhandel24:
-    enabled: true
-    urls:
-      - https://solarhandel24.de/products/midea-portasplit-klimaanlage
-  schwabklima:
-    enabled: true
-    urls:
-      - https://www.schwab-klima.de/product-page/midea-portasplit-mobiles-klimager%C3%A4t-3-5kw
-  # grz-haustechnik signals stock via delivery lead time ("Lieferzeit N Werktage");
-  # a long lead time is reported as a pre-order.
-  grz:
-    enabled: true
-    urls:
-      - https://grz-haustechnik.de/klima/mobile-klimageraete/1768/mobiles-split-klimageraet-r-32-midea-porta-split-3-5kw
-  selfio:
-    enabled: true
-    urls:
-      - https://www.selfio.de/produkte/midea-mobile-klimaanlage-portasplit-fuer-raeume-bis-zu-42-m2
-  klimavertrieb:
-    enabled: true
-    urls:
-      - https://klima-vertrieb.de/klima/mobile-klimaanlagen/midea/819/midea-portasplit-mobiles-split-klimageraet-waermepumpe-3-5-kw-a
-  groupsumi:
-    enabled: true
-    urls:
-      - https://groupsumi.de/heizung/klimaanlage/klimaanlage-mobil/4-in-1-tragbare-klimaanlage-und-luftentfeuchter-midea-portasplit-3-5-kw-13907811
-  # B2B wholesaler: availability shown to anonymous visitors, but prices are
-  # customer-group gated, so no price is reported. id 3 = long delivery = pre-order.
-  weinmannschanz:
-    enabled: true
-    urls:
-      - https://www.weinmann-schanz.de/de/de/produkte/produkt.html/mobiles-split-klimageraet-r-32-midea-porta-split-3-5kw-90-134-79.html
-  talentking:
-    enabled: true
-    urls:
-      - https://talent-king.de/products/midea-portasplit-mobiles-split-klimagerat-warmepumpe-3-5-kw-a
-  # PrestaShop behind Cloudflare (JA3 wall): needs flaresolverr.
-  heizungbilliger:
-    enabled: true
-    urls:
-      - https://heizung-billiger.de/736321-midea-mobiles-split-klimagerat-porta-split-r32-35kw-heizen-kuhlen-230v-midea-10002085-4048164116478.html
-  tecedo:
-    enabled: true
-    urls:
-      - https://www.tecedo.de/midea-porta-split-klimageraet-203567.html
-  # Shopware 5: uses LimitedAvailability ("Lieferzeit anfragen") for out of stock,
-  # so only InStock counts as available.
-  mediadeal:
-    enabled: true
-    urls:
-      - https://www.mediadeal.de/haus-garten/haustechnik/klimageraete/19421/midea-porta-split-klimageraet-3.500w
-  klimafy:
-    enabled: true
-    urls:
-      - https://klimafy.de/a/midea-portasplit-klimageraet-diy-mobile-split-klimaanlage-12k-eek-a-a/9894907/
-  entratek:
-    enabled: true
-    urls:
-      - https://www.entratek-shop.de/p/midea-portasplit-klimaanlage-mobile-waermepumpe-kuehlen-a-heizen-a-12000-btu-3-5kw
-  # Gambio, no schema.org: reads the delivery badge (green/yellow = orderable,
-  # red = "nicht mehr lieferbar").
-  bobselektro:
-    enabled: true
-    urls:
-      - https://www.bobselektro.de/kleingeraete/mobile-klimaanlagen/midea-portasplit-3-5-kw-mobile-split-klimaanlage.html
-  grsolar:
-    enabled: true
-    urls:
-      - https://gr-solar.de/produkt/midea-portasplit-klimaanlage-35-kw
-  # Bauhaus store pickup availability, checked per product×store via the
-  # purchasability API (needs flaresolverr; product 31934233 = PortaSplit). Each
-  # store's numeric id is the "/fc/<id>" number from its bauhaus.info store page.
-  bauhausStore:
-    enabled: true
-    productIDs:
-      - "31934233"
-    stores:
-      - id: "589"
-        name: Bauhaus Frankfurt
+# Each product has a `name` (used in the notification title) and a `sources` map.
+# A source is checked only if it is listed; omit a source to skip it. Every source
+# takes a list, so it can watch several product pages at once.
+#
+# Supported sources (config keys):
+#   braucheklima (url + products), obi (productIDs + postalCodes),
+#   expert (urls + storeId), bauhausStore (productIDs + stores),
+#   and URL-list sources: mediamarkt, euronics, globus, amazon, bauhaus, hagebau,
+#   hornbach, toom, solarprofi, galaxus, solario24, evolarshop, bueromarkt,
+#   prosatech, tado, solarhandel24, schwabklima, grz, selfio, klimavertrieb,
+#   groupsumi, weinmannschanz, talentking, heizungbilliger, tecedo, mediadeal,
+#   klimafy, entratek, bobselektro, grsolar.
+products:
+  - name: Midea PortaSplit
+    sources:
+      braucheklima:
+        url: https://braucheklima.de/api/availability
+        products:
+          - Midea Portasplit
+      obi:
+        productIDs:
+          - "8620890"
+        postalCodes:
+          - "36037"
+      mediamarkt:
+        urls:
+          - https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html
+      amazon:
+        urls:
+          - https://www.amazon.de/dp/B0D3PP64JS
+      expert:
+        storeId: e_2879130
+        urls:
+          - https://www.expert.de/shop/unsere-produkte/haushalt-kuche/wohnklima/klimagerate/32750011559-portasplit-mobile-split-klimaanlage.html
+      # Bauhaus store pickup availability, per product×store (needs flaresolverr).
+      bauhausStore:
+        productIDs:
+          - "31934233"
+        stores:
+          - id: "589"
+            name: Bauhaus Frankfurt

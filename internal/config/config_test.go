@@ -25,18 +25,19 @@ func TestLoadReadsValuesVerbatim(t *testing.T) {
 checkInterval: 10m
 httpTimeout: 15s
 priceMax: 900
-homePLZ: "60311"
 localPLZPrefixes: ["60", "63"]
 pushover:
   priority: 2
-sources:
-  amazon:
-    enabled: false
-  mediamarkt:
-    enabled: true
-    urls:
-      - https://example.com/a
-      - https://example.com/b
+products:
+  - name: Halterung
+    sources:
+      obi:
+        productIDs: ["123"]
+        postalCodes: ["60311"]
+      mediamarkt:
+        urls:
+          - https://example.com/a
+          - https://example.com/b
 `)
 	cfg, err := Load(p)
 	if err != nil {
@@ -55,15 +56,19 @@ sources:
 	if len(cfg.LocalPLZPrefixes) != 2 || cfg.LocalPLZPrefixes[0] != "60" {
 		t.Errorf("LocalPLZPrefixes = %v, want [60 63]", cfg.LocalPLZPrefixes)
 	}
-	if cfg.AmazonEnabled {
-		t.Errorf("amazon should be disabled")
+	if len(cfg.Products) != 1 || cfg.Products[0].Name != "Halterung" {
+		t.Fatalf("Products = %+v, want one named Halterung", cfg.Products)
 	}
-	if len(cfg.MediaMarktURLs) != 2 {
-		t.Errorf("MediaMarktURLs = %v, want 2 entries", cfg.MediaMarktURLs)
+	s := cfg.Products[0].Sources
+	if s.Obi == nil || len(s.Obi.ProductIDs) != 1 || s.Obi.PostalCodes[0] != "60311" {
+		t.Errorf("obi = %+v, want productIDs/postalCodes set", s.Obi)
 	}
-	// No defaults: an unspecified source stays disabled with empty fields.
-	if cfg.BraucheKlimaEnabled || len(cfg.BraucheKlimaProducts) != 0 {
-		t.Errorf("unspecified braucheklima should be zero-valued, got enabled=%v products=%v", cfg.BraucheKlimaEnabled, cfg.BraucheKlimaProducts)
+	if s.MediaMarkt == nil || len(s.MediaMarkt.URLs) != 2 {
+		t.Errorf("mediamarkt = %+v, want 2 urls", s.MediaMarkt)
+	}
+	// Absent source stays nil (skipped), no enabled flag.
+	if s.BraucheKlima != nil {
+		t.Errorf("unspecified braucheklima should be nil, got %+v", s.BraucheKlima)
 	}
 	if cfg.PushoverToken != "tok" || cfg.PushoverUser != "usr" {
 		t.Errorf("secrets not loaded from env")
@@ -73,7 +78,7 @@ sources:
 func TestLoadMissingSecrets(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "")
 	t.Setenv("PUSHOVER_USER", "")
-	p := writeConfig(t, "checkInterval: 5m\nsources:\n  obi:\n    enabled: true\n")
+	p := writeConfig(t, "checkInterval: 5m\nproducts:\n  - name: X\n    sources:\n      obi:\n        productIDs: [\"1\"]\n")
 	if _, err := Load(p); err == nil {
 		t.Fatal("expected error for missing Pushover secrets")
 	}
@@ -83,9 +88,18 @@ func TestLoadMissingCheckInterval(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "tok")
 	t.Setenv("PUSHOVER_USER", "usr")
 	// No checkInterval -> zero -> validation error (no default fills it in).
-	p := writeConfig(t, "sources:\n  obi:\n    enabled: true\n")
+	p := writeConfig(t, "products:\n  - name: X\n    sources:\n      obi:\n        productIDs: [\"1\"]\n")
 	if _, err := Load(p); err == nil {
 		t.Fatal("expected error for missing checkInterval")
+	}
+}
+
+func TestLoadNoProducts(t *testing.T) {
+	t.Setenv("PUSHOVER_TOKEN", "tok")
+	t.Setenv("PUSHOVER_USER", "usr")
+	p := writeConfig(t, "checkInterval: 5m\n")
+	if _, err := Load(p); err == nil {
+		t.Fatal("expected error for no products")
 	}
 }
 

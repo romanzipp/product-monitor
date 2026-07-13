@@ -57,123 +57,129 @@ func main() {
 	}
 
 	var sources []model.Source
-	if cfg.BraucheKlimaEnabled {
-		sources = append(sources, source.NewBraucheKlima(httpClient, flareSolverr, cfg.BraucheKlimaURL, cfg.BraucheKlimaProducts))
-	}
-	if cfg.ObiEnabled {
-		sources = append(sources, source.NewObi(httpClient, cfg.ObiProductIDs, cfg.ObiPostalCodes))
-	}
-	if cfg.MediaMarktEnabled {
-		sources = append(sources, source.NewMediaMarkt(httpClient, flareSolverr, cfg.MediaMarktURLs))
-	}
-	if cfg.EuronicsEnabled {
-		sources = append(sources, source.NewEuronics(httpClient, flareSolverr, cfg.EuronicsURLs))
-	}
-	if cfg.GlobusEnabled {
-		sources = append(sources, source.NewGlobus(httpClient, flareSolverr, cfg.GlobusURLs))
-	}
-	if cfg.AmazonEnabled {
-		sources = append(sources, source.NewAmazon(httpClient, flareSolverr, cfg.AmazonURLs))
-	}
-	if cfg.BauhausEnabled {
-		sources = append(sources, source.NewBauhaus(httpClient, flareSolverr, cfg.BauhausURLs))
-	}
-	if cfg.HagebauEnabled {
-		sources = append(sources, source.NewHagebau(httpClient, flareSolverr, cfg.HagebauURLs))
-	}
-	if cfg.HornbachEnabled {
-		sources = append(sources, source.NewHornbach(httpClient, flareSolverr, cfg.HornbachURLs))
-	}
-	if cfg.ToomEnabled {
-		sources = append(sources, source.NewToom(httpClient, flareSolverr, cfg.ToomURLs))
-	}
-	if cfg.SolarProfiEnabled {
-		// Not anti-bot protected; fetch directly (no FlareSolverr).
-		sources = append(sources, source.NewSolarProfi(httpClient, nil, cfg.SolarProfiURLs))
-	}
-	if cfg.GalaxusEnabled {
-		// Akamai + CAPTCHA: only reachable through FlareSolverr.
-		sources = append(sources, source.NewGalaxus(httpClient, flareSolverr, cfg.GalaxusURLs))
-	}
-	if cfg.Solario24Enabled {
-		sources = append(sources, source.NewSolario24(httpClient, nil, cfg.Solario24URLs))
-	}
-	if cfg.EvolarShopEnabled {
-		sources = append(sources, source.NewEvolarShop(httpClient, nil, cfg.EvolarShopURLs))
-	}
-	if cfg.BueromarktEnabled {
-		// Behind Imperva/Incapsula: route through FlareSolverr.
-		sources = append(sources, source.NewBueromarkt(httpClient, flareSolverr, cfg.BueromarktURLs))
-	}
-	if cfg.ExpertEnabled {
-		sources = append(sources, source.NewExpert(httpClient, cfg.ExpertURLs, cfg.ExpertStoreID))
-	}
-	if cfg.ProsatechEnabled {
-		sources = append(sources, source.NewProsatech(httpClient, nil, cfg.ProsatechURLs))
-	}
-	if cfg.TadoEnabled {
-		sources = append(sources, source.NewTado(httpClient, nil, cfg.TadoURLs))
-	}
-	if cfg.SolarHandel24Enabled {
-		sources = append(sources, source.NewSolarHandel24(httpClient, nil, cfg.SolarHandel24URLs))
-	}
-	if cfg.SchwabKlimaEnabled {
-		sources = append(sources, source.NewSchwabKlima(httpClient, nil, cfg.SchwabKlimaURLs))
-	}
-	if cfg.GrzEnabled {
-		sources = append(sources, source.NewGrz(httpClient, nil, cfg.GrzURLs))
-	}
-	if cfg.SelfioEnabled {
-		sources = append(sources, source.NewSelfio(httpClient, nil, cfg.SelfioURLs))
-	}
-	if cfg.KlimaVertriebEnabled {
-		sources = append(sources, source.NewKlimaVertrieb(httpClient, nil, cfg.KlimaVertriebURLs))
-	}
-	if cfg.GroupSumiEnabled {
-		sources = append(sources, source.NewGroupSumi(httpClient, nil, cfg.GroupSumiURLs))
-	}
-	if cfg.WeinmannSchanzEnabled {
-		sources = append(sources, source.NewWeinmannSchanz(httpClient, nil, cfg.WeinmannSchanzURLs))
-	}
-	if cfg.TalentKingEnabled {
-		sources = append(sources, source.NewTalentKing(httpClient, nil, cfg.TalentKingURLs))
-	}
-	if cfg.HeizungBilligerEnabled {
-		// Behind Cloudflare (JA3 wall): route through FlareSolverr.
-		sources = append(sources, source.NewHeizungBilliger(httpClient, flareSolverr, cfg.HeizungBilligerURLs))
-	}
-	if cfg.TecedoEnabled {
-		sources = append(sources, source.NewTecedo(httpClient, nil, cfg.TecedoURLs))
-	}
-	if cfg.MediaDealEnabled {
-		sources = append(sources, source.NewMediaDeal(httpClient, nil, cfg.MediaDealURLs))
-	}
-	if cfg.KlimafyEnabled {
-		sources = append(sources, source.NewKlimafy(httpClient, nil, cfg.KlimafyURLs))
-	}
-	if cfg.EntratekEnabled {
-		sources = append(sources, source.NewEntratek(httpClient, nil, cfg.EntratekURLs))
-	}
-	if cfg.BobsElektroEnabled {
-		sources = append(sources, source.NewBobsElektro(httpClient, nil, cfg.BobsElektroURLs))
-	}
-	if cfg.GrSolarEnabled {
-		sources = append(sources, source.NewGrSolar(httpClient, nil, cfg.GrSolarURLs))
-	}
-	if cfg.BauhausStoreEnabled {
-		if flareSolverr == nil {
-			log.Warn("bauhaus-store source needs flaresolverr.url, skipping")
-		} else {
-			stores := make([]source.BauhausStore, len(cfg.BauhausStores))
-			for i, st := range cfg.BauhausStores {
-				stores[i] = source.BauhausStore{ID: st.ID, Name: st.Name}
+	for _, p := range cfg.Products {
+		s := p.Sources
+		// add wraps a source so its availabilities carry this product's name.
+		add := func(src model.Source) { sources = append(sources, source.WithProduct(src, p.Name)) }
+
+		if s.BraucheKlima != nil {
+			add(source.NewBraucheKlima(httpClient, flareSolverr, s.BraucheKlima.URL, s.BraucheKlima.Products))
+		}
+		if s.Obi != nil {
+			add(source.NewObi(httpClient, s.Obi.ProductIDs, s.Obi.PostalCodes))
+		}
+		if s.MediaMarkt != nil {
+			add(source.NewMediaMarkt(httpClient, flareSolverr, s.MediaMarkt.URLs))
+		}
+		if s.Euronics != nil {
+			add(source.NewEuronics(httpClient, flareSolverr, s.Euronics.URLs))
+		}
+		if s.Globus != nil {
+			add(source.NewGlobus(httpClient, flareSolverr, s.Globus.URLs))
+		}
+		if s.Amazon != nil {
+			add(source.NewAmazon(httpClient, flareSolverr, s.Amazon.URLs))
+		}
+		if s.Bauhaus != nil {
+			add(source.NewBauhaus(httpClient, flareSolverr, s.Bauhaus.URLs))
+		}
+		if s.Hagebau != nil {
+			add(source.NewHagebau(httpClient, flareSolverr, s.Hagebau.URLs))
+		}
+		if s.Hornbach != nil {
+			add(source.NewHornbach(httpClient, flareSolverr, s.Hornbach.URLs))
+		}
+		if s.Toom != nil {
+			add(source.NewToom(httpClient, flareSolverr, s.Toom.URLs))
+		}
+		if s.SolarProfi != nil {
+			// Not anti-bot protected; fetch directly (no FlareSolverr).
+			add(source.NewSolarProfi(httpClient, nil, s.SolarProfi.URLs))
+		}
+		if s.Galaxus != nil {
+			// Akamai + CAPTCHA: only reachable through FlareSolverr.
+			add(source.NewGalaxus(httpClient, flareSolverr, s.Galaxus.URLs))
+		}
+		if s.Solario24 != nil {
+			add(source.NewSolario24(httpClient, nil, s.Solario24.URLs))
+		}
+		if s.EvolarShop != nil {
+			add(source.NewEvolarShop(httpClient, nil, s.EvolarShop.URLs))
+		}
+		if s.Bueromarkt != nil {
+			// Behind Imperva/Incapsula: route through FlareSolverr.
+			add(source.NewBueromarkt(httpClient, flareSolverr, s.Bueromarkt.URLs))
+		}
+		if s.Expert != nil {
+			add(source.NewExpert(httpClient, s.Expert.URLs, s.Expert.StoreID))
+		}
+		if s.Prosatech != nil {
+			add(source.NewProsatech(httpClient, nil, s.Prosatech.URLs))
+		}
+		if s.Tado != nil {
+			add(source.NewTado(httpClient, nil, s.Tado.URLs))
+		}
+		if s.SolarHandel24 != nil {
+			add(source.NewSolarHandel24(httpClient, nil, s.SolarHandel24.URLs))
+		}
+		if s.SchwabKlima != nil {
+			add(source.NewSchwabKlima(httpClient, nil, s.SchwabKlima.URLs))
+		}
+		if s.Grz != nil {
+			add(source.NewGrz(httpClient, nil, s.Grz.URLs))
+		}
+		if s.Selfio != nil {
+			add(source.NewSelfio(httpClient, nil, s.Selfio.URLs))
+		}
+		if s.KlimaVertrieb != nil {
+			add(source.NewKlimaVertrieb(httpClient, nil, s.KlimaVertrieb.URLs))
+		}
+		if s.GroupSumi != nil {
+			add(source.NewGroupSumi(httpClient, nil, s.GroupSumi.URLs))
+		}
+		if s.WeinmannSchanz != nil {
+			add(source.NewWeinmannSchanz(httpClient, nil, s.WeinmannSchanz.URLs))
+		}
+		if s.TalentKing != nil {
+			add(source.NewTalentKing(httpClient, nil, s.TalentKing.URLs))
+		}
+		if s.HeizungBilliger != nil {
+			// Behind Cloudflare (JA3 wall): route through FlareSolverr.
+			add(source.NewHeizungBilliger(httpClient, flareSolverr, s.HeizungBilliger.URLs))
+		}
+		if s.Tecedo != nil {
+			add(source.NewTecedo(httpClient, nil, s.Tecedo.URLs))
+		}
+		if s.MediaDeal != nil {
+			add(source.NewMediaDeal(httpClient, nil, s.MediaDeal.URLs))
+		}
+		if s.Klimafy != nil {
+			add(source.NewKlimafy(httpClient, nil, s.Klimafy.URLs))
+		}
+		if s.Entratek != nil {
+			add(source.NewEntratek(httpClient, nil, s.Entratek.URLs))
+		}
+		if s.BobsElektro != nil {
+			add(source.NewBobsElektro(httpClient, nil, s.BobsElektro.URLs))
+		}
+		if s.GrSolar != nil {
+			add(source.NewGrSolar(httpClient, nil, s.GrSolar.URLs))
+		}
+		if s.BauhausStore != nil {
+			if flareSolverr == nil {
+				log.Warn("bauhaus-store source needs flaresolverr.url, skipping", "product", p.Name)
+			} else {
+				stores := make([]source.BauhausStore, len(s.BauhausStore.Stores))
+				for i, st := range s.BauhausStore.Stores {
+					stores[i] = source.BauhausStore{ID: st.ID, Name: st.Name}
+				}
+				add(source.NewBauhausStore(httpClient, flareSolverr, s.BauhausStore.ProductIDs, stores))
 			}
-			sources = append(sources, source.NewBauhausStore(httpClient, flareSolverr, cfg.BauhausStoreProductIDs, stores))
 		}
 	}
 
 	if len(sources) == 0 {
-		log.Error("no sources enabled, exiting")
+		log.Error("no sources configured, exiting")
 		os.Exit(2)
 	}
 

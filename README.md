@@ -114,7 +114,13 @@ automatically. A Grafana dashboard lives in the `solum` repo under
 All non-secret settings live in a YAML file (`config.yaml`, path via `-config`,
 default `config.yaml`). There are **no built-in defaults** — every value comes
 from the file, so start from `config.example.yaml` (a complete, working config)
-and edit it. A source with an empty list checks nothing.
+and edit it.
+
+Config is **product-centric**: define one or more `products`, each with a `name`
+(shown in the notification title) and a `sources` map. A source is checked only
+if it appears under a product's `sources` — omit it to skip it (there is no
+`enabled` flag). The same retailer can be listed under several products. The
+`Config` column in the table above is the key to use under `sources.<retailer>`.
 
 **Secrets stay in the environment** (or a `.env` file): only `PUSHOVER_TOKEN` and
 `PUSHOVER_USER`, both required. Nothing else reads the environment.

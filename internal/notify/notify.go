@@ -51,7 +51,7 @@ func (p *Pushover) Notify(ctx context.Context, a model.Availability) error {
 	form := url.Values{}
 	form.Set("token", p.token)
 	form.Set("user", p.user)
-	form.Set("title", truncate(fmt.Sprintf("PortaSplit verfügbar: %s 🔥", a.StoreName), 250))
+	form.Set("title", truncate(fmt.Sprintf("%s verfügbar: %s 🔥", a.ProductName, a.StoreName), 250))
 	form.Set("message", formatMessage(a))
 	form.Set("priority", strconv.Itoa(p.priority))
 	if p.priority >= 2 {
