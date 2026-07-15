@@ -108,7 +108,7 @@ func (s *BauhausStoreSource) build(productID string, store BauhausStore, pr *bau
 			StoreName:   store.Name,
 			ProductName: "Midea PortaSplit",
 			Stock:       stock,
-			URL:         bauhausStoreReferer,
+			URL:         "https://www.bauhaus.info/p/" + productID,
 			Location:    store.Name,
 			Channel:     model.ChannelInStore,
 			Targeted:    true,

@@ -78,7 +78,8 @@ func (s *ObiSource) checkOne(ctx context.Context, productID, postalCode string) 
 	}
 
 	productName := "OBI #" + productID
-	productURL := "https://www.obi.de"
+	// /p/<id> redirects to the full product page — clickable in notifications.
+	productURL := "https://www.obi.de/p/" + productID
 
 	out := make([]model.Availability, 0)
 	for _, st := range res.PickupStores {
