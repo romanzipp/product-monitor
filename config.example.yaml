@@ -43,27 +43,82 @@ products:
     sources:
       braucheklima:
         url: https://braucheklima.de/api/availability
-        products:
-          - Midea Portasplit
+        products: [ "Midea Portasplit" ]
       obi:
-        productIDs:
-          - "8620890"
-        postalCodes:
-          - "36037"
+        productIDs: [ "8620890" ]
+        postalCodes: [ "36037" ]
       mediamarkt:
-        urls:
-          - https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html
+        urls: [ "https://www.mediamarkt.de/de/product/_midea-porta-split-klimaanlage-grau-max-raumgrosse-42-m-eek-a-142245268.html" ]
+      euronics:
+        urls: [ "https://www.euronics.de/haus-und-haushalt/heizen-lueften-kuehlen/kuehlen/split-klimageraete/porta-split-split-klimageraet-a-4065327878899" ]
+      globus:
+        urls: [ "https://www.globus-baumarkt.de/p/midea-portasplit-mobile-split-klimaanlage-12000-btu-heiz-kuehlfunktion-0694600235/" ]
       amazon:
-        urls:
-          - https://www.amazon.de/dp/B0D3PP64JS
+        urls: [ "https://www.amazon.de/dp/B0D3PP64JS", "https://www.amazon.de/dp/B0GX16LKSC" ]
+      bauhaus:
+        urls: [ "https://www.bauhaus.info/p/31934233" ]
+      hagebau:
+        urls: [ "https://www.hagebau.de/p/midea-klimaanlage-portasplit-anP7004600334/" ]
+      hornbach:
+        urls: [ "https://www.hornbach.de/p/klimasplitgeraet-midea-portasplit-12-000-btu-105-m-weiss/12356554/" ]
+      toom:
+        urls: [ "https://toom.de/p/mobiles-klimageraet-portasplit-12000-btuh/9350668" ]
+      solarprofi:
+        urls: [ "https://shop.solarprofi-24.de/haustechnik/7212/midea-mobiles-split-klimageraet-porta-split-3-5-kw-r-32-raumklimageraet-4-in-1-komfort" ]
+      # Akamai + CAPTCHA: only works via flaresolverr, and may still be blocked.
+      galaxus:
+        urls: [ "https://www.galaxus.de/de/s2/product/midea-porta-split-42-m-12000-btuh-klimaanlage-40851329" ]
+      solario24:
+        urls: [ "https://www.solario24.com/de/produkt/midea-portasplit-cool-mobile-split-klimaanlage-235-kw-8-000-btu-ohne-feste-installation-a/" ]
+      evolarshop:
+        urls: [ "https://www.evolarshop.de/midea-portasplit-mobile-split-airco-12000btu-kuhlen-heizen-zweite-chance-1" ]
+      # Behind Imperva/Incapsula: prefers flaresolverr.
+      bueromarkt:
+        urls: [ "https://www.bueromarkt-ag.de/klimageraet_midea_portasplit_12000_btuh,p-11647.html" ]
+      # storeId is any valid expert store id; online stock is store-independent.
       expert:
         storeId: e_2879130
-        urls:
-          - https://www.expert.de/shop/unsere-produkte/haushalt-kuche/wohnklima/klimagerate/32750011559-portasplit-mobile-split-klimaanlage.html
-      # Bauhaus store pickup availability, per product×store (needs flaresolverr).
+        urls: [ "https://www.expert.de/shop/unsere-produkte/haushalt-kuche/wohnklima/klimagerate/32750011559-portasplit-mobile-split-klimaanlage.html" ]
+      prosatech:
+        urls: [ "https://prosatech.de/Mobile-Klimaanlage-Midea-PortaSplit-35kw" ]
+      tado:
+        urls: [ "https://shop.tado.com/products/midea-portasplit-mobile-split-air-conditioner-3-5-kw-tado-smart-ac-control-v3" ]
+      solarhandel24:
+        urls: [ "https://solarhandel24.de/products/midea-portasplit-klimaanlage" ]
+      schwabklima:
+        urls: [ "https://www.schwab-klima.de/product-page/midea-portasplit-mobiles-klimager%C3%A4t-3-5kw" ]
+      grz:
+        urls: [ "https://grz-haustechnik.de/klima/mobile-klimageraete/1768/mobiles-split-klimageraet-r-32-midea-porta-split-3-5kw" ]
+      selfio:
+        urls: [ "https://www.selfio.de/produkte/midea-mobile-klimaanlage-portasplit-fuer-raeume-bis-zu-42-m2" ]
+      klimavertrieb:
+        urls: [ "https://klima-vertrieb.de/klima/mobile-klimaanlagen/midea/819/midea-portasplit-mobiles-split-klimageraet-waermepumpe-3-5-kw-a" ]
+      groupsumi:
+        urls: [ "https://groupsumi.de/heizung/klimaanlage/klimaanlage-mobil/4-in-1-tragbare-klimaanlage-und-luftentfeuchter-midea-portasplit-3-5-kw-13907811" ]
+      # B2B wholesaler: prices are customer-group gated, so no price is reported.
+      weinmannschanz:
+        urls: [ "https://www.weinmann-schanz.de/de/de/produkte/produkt.html/mobiles-split-klimageraet-r-32-midea-porta-split-3-5kw-90-134-79.html" ]
+      talentking:
+        urls: [ "https://talent-king.de/products/midea-portasplit-mobiles-split-klimagerat-warmepumpe-3-5-kw-a" ]
+      # PrestaShop behind Cloudflare (JA3 wall): needs flaresolverr.
+      heizungbilliger:
+        urls: [ "https://heizung-billiger.de/736321-midea-mobiles-split-klimagerat-porta-split-r32-35kw-heizen-kuhlen-230v-midea-10002085-4048164116478.html" ]
+      tecedo:
+        urls: [ "https://www.tecedo.de/midea-porta-split-klimageraet-203567.html" ]
+      # Shopware 5: LimitedAvailability ("Lieferzeit anfragen") = out of stock.
+      mediadeal:
+        urls: [ "https://www.mediadeal.de/haus-garten/haustechnik/klimageraete/19421/midea-porta-split-klimageraet-3.500w" ]
+      klimafy:
+        urls: [ "https://klimafy.de/a/midea-portasplit-klimageraet-diy-mobile-split-klimaanlage-12k-eek-a-a/9894907/" ]
+      entratek:
+        urls: [ "https://www.entratek-shop.de/p/midea-portasplit-klimaanlage-mobile-waermepumpe-kuehlen-a-heizen-a-12000-btu-3-5kw" ]
+      # Gambio, no schema.org: delivery badge (red = "nicht mehr lieferbar").
+      bobselektro:
+        urls: [ "https://www.bobselektro.de/kleingeraete/mobile-klimaanlagen/midea-portasplit-3-5-kw-mobile-split-klimaanlage.html" ]
+      grsolar:
+        urls: [ "https://gr-solar.de/produkt/midea-portasplit-klimaanlage-35-kw" ]
+      # Pickup availability per product×store via the purchasability API (flaresolverr).
       bauhausStore:
-        productIDs:
-          - "31934233"
+        productIDs: [ "31934233" ]
         stores:
-          - id: "589"
-            name: Bauhaus Frankfurt
+          - { id: "589", name: "Bauhaus Frankfurt" }
