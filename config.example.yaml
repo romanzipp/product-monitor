@@ -5,20 +5,20 @@
 
 checkInterval: 5m
 httpTimeout: 30s
-dbPath: klima.db            # container/prod: /data/product-monitor.db
-metricsAddr: ":8080"        # Prometheus /metrics listen address
-priceMax: 0                 # ignore offers above this many euros; 0 = no limit
+dbPath: klima.db # container/prod: /data/product-monitor.db
+metricsAddr: ":8080" # Prometheus /metrics listen address
+priceMax: 0 # ignore offers above this many euros; 0 = no limit
 
 # localPLZPrefixes keeps an in-store result only if its PLZ starts with one of
 # these; online is unaffected. OBI is queried per configured postalCode and
 # bypasses this filter.
-localPLZPrefixes: ["36"]
+localPLZPrefixes: [ "36" ]
 
 pushover:
-  priority: 2               # 2 = emergency (repeats until acknowledged)
-  retry: 60                 # emergency: seconds between repeats (min 30)
-  expire: 3600              # emergency: seconds until repeats stop (max 10800)
-  device: ""                # optional target device
+  priority: 2 # 2 = emergency (repeats until acknowledged)
+  retry: 60 # emergency: seconds between repeats (min 30)
+  expire: 3600 # emergency: seconds until repeats stop (max 10800)
+  device: "" # optional target device
 
 flaresolverr:
   # Proxy for Cloudflare/anti-bot sources. Empty = fetch directly (residential
@@ -39,6 +39,42 @@ flaresolverr:
 #   groupsumi, weinmannschanz, talentking, heizungbilliger, tecedo, mediadeal,
 #   klimafy, entratek, bobselektro, grsolar.
 products:
+  - name: Midea PortaSplit Cool
+    sources:
+      braucheklima:
+        url: https://braucheklima.de/api/availability
+        products: [ "Midea Portasplit Cool" ]
+      obi:
+        productIDs: [ "2191158911022" ]
+        postalCodes: [ "36037" ]
+      mediamarkt:
+        urls: [ "https://www.mediamarkt.de/de/product/_midea-portasplit-cool-split-klimaanlage-weissgrau-max-raumgrosse-70-m-3035466.html" ]
+      euronics:
+        urls: [ "https://www.euronics.de/haus-und-haushalt/heizen-lueften-kuehlen/kuehlen/split-klimageraete/portasplit-cool-mobiles-split-klimageraet-4065465380018" ]
+      globus:
+        urls: [ "https://www.globus-baumarkt.de/p/midea-portasplit-mobile-split-klimaanlage-cool-8000-btu-kuehlfunktion-0694600251/" ]
+      amazon:
+        urls: [ "https://www.amazon.de/dp/B0GXDWTFR5" ]
+      bauhaus:
+        urls: [ "https://www.bauhaus.info/p/33946696" ]
+      solario24:
+        urls: [ "https://www.solario24.com/de/produkt/midea-portasplit-cool-mobile-split-klimaanlage-235-kw-8-000-btu-ohne-feste-installation-a/" ]
+      # slug misleadingly says 12000btu, but the page is the Cool 8000 BTU variant.
+      evolarshop:
+        urls: [ "https://www.evolarshop.de/midea-portasplit-mobiele-split-airco-12000btu-koelen-verwarmen-3" ]
+      prosatech:
+        urls: [ "https://prosatech.de/Mobile-Klimaanlage-Midea-PortaSplit-Cool-23kw" ]
+      weinmannschanz:
+        urls: [ "https://www.weinmann-schanz.de/de/de/produkte/produkt.html/mobiles-split-klimageraet-porta-split-cool-r-32-2-35-kw-90-139-21.html" ]
+      heizungbilliger:
+        urls: [ "https://heizung-billiger.de/768693-midea-portasplit-cool-mobile-klimaanlage-klimasplitgerat-weiss-grau-max-raumgrosse-70-m-eek-a-midea-92020620z0061-4048164122301.html" ]
+      grsolar:
+        urls: [ "https://gr-solar.de/produkt/midea-portasplit-cool-mobile-split-klimaanlage-ohne-installation-235-kw-a-bis-28-m%C2%B2" ]
+      bauhausStore:
+        productIDs: [ "33946696" ]
+        stores:
+          - { id: "589", name: "Bauhaus Frankfurt" }
+
   - name: Midea PortaSplit
     sources:
       braucheklima:
@@ -68,8 +104,6 @@ products:
       # Akamai + CAPTCHA: only works via flaresolverr, and may still be blocked.
       galaxus:
         urls: [ "https://www.galaxus.de/de/s2/product/midea-porta-split-42-m-12000-btuh-klimaanlage-40851329" ]
-      solario24:
-        urls: [ "https://www.solario24.com/de/produkt/midea-portasplit-cool-mobile-split-klimaanlage-235-kw-8-000-btu-ohne-feste-installation-a/" ]
       evolarshop:
         urls: [ "https://www.evolarshop.de/midea-portasplit-mobile-split-airco-12000btu-kuhlen-heizen-zweite-chance-1" ]
       # Behind Imperva/Incapsula: prefers flaresolverr.
