@@ -7,6 +7,9 @@ tracked in a local SQLite database so you never get spammed with duplicate
 alerts, while a fresh restock (after an item goes out of stock) triggers a new
 notification. Offers above `priceMax` are ignored.
 
+> [!NOTE]
+> This project is primarily developed on [Codeberg](https://codeberg.org/romanzipp/product-monitor) and only mirrored to GitHub. Please open issues and pull requests on Codeberg.
+
 ## How it works
 
 1. Every `checkInterval`, each configured **source** is polled.
