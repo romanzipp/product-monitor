@@ -15,8 +15,8 @@ COPY . .
 
 ENV CGO_ENABLED=0
 RUN GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64} \
-    go build -trimpath -ldflags="-s -w" \
-      -o /out/product-monitor ./cmd/product-monitor
+  go build -trimpath -ldflags="-s -w" \
+  -o /out/product-monitor ./cmd/product-monitor
 
 # Staged empty data dir, copied below with nonroot ownership so a fresh mounted
 # volume inherits it and the nonroot process can create the SQLite DB.
@@ -34,6 +34,8 @@ COPY --from=builder /out/product-monitor /app/product-monitor
 # is nonroot-owned so a freshly created volume is writable by the app user.
 COPY --from=builder --chown=nonroot:nonroot /data /data
 VOLUME ["/data"]
+
+WORKDIR /data
 
 USER nonroot:nonroot
 ENTRYPOINT ["/app/product-monitor"]

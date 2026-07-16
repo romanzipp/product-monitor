@@ -9,8 +9,9 @@ services:
     image: product-monitor:dev
     restart: unless-stopped
     # Non-secret config comes from the mounted config.yaml; secrets (PUSHOVER_*)
-    # from .env. Copy config.example.yaml to config.yaml and set dbPath:
-    # /data/product-monitor.db and flaresolverr.url: http://flaresolverr:8191
+    # from .env. Copy config.example.yaml to config.yaml and set
+    # flaresolverr.url: http://flaresolverr:8191. The SQLite DB lands in the
+    # /data volume via the image WORKDIR, so dbPath needs no change.
     command: ["-config", "/etc/product-monitor/config.yaml"]
     env_file: .env
     ports:

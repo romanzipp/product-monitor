@@ -46,7 +46,7 @@ instance which will be automatically wired.
 
 ```bash
 cp .env.example .env
-cp config.example.yaml config.yaml  # set dbPath: /data/product-monitor.db
+cp config.example.yaml config.yaml  # set flaresolverr.url: http://flaresolverr:8191
 docker compose up -d --build        # --build needed on first run and after code changes
 ```
 
