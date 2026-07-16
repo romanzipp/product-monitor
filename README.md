@@ -38,6 +38,9 @@ make run
 
 ## Docker Compose
 
+The Docker Compose stack also include a [Flaresolverr](https://github.com/Flaresolverr/Flaresolverr)
+instance which will be automatically wired.
+
 ```bash
 cp .env.example .env
 cp config.example.yaml config.yaml  # set dbPath: /data/product-monitor.db
