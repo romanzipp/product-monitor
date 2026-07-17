@@ -24,6 +24,7 @@ type Availability struct {
 	PLZ         string // empty for online
 	Targeted    bool   // source already targets a specific store; skip local filter
 	PreOrder    bool   // orderable but pre-order / long delivery, not immediately in stock
+	PriceMax    int    // per-product price cap in euros; 0 = no limit
 	Key         string // stable dedup key
 }
 

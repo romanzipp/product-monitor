@@ -37,6 +37,7 @@ config:
   # source is checked only if listed. See config.example.yaml for all keys.
   products:
     - name: Midea PortaSplit Cool
+      priceMax: 800            # per-product cap; falls back to top-level priceMax if unset
       sources:
         braucheklima:
           url: https://braucheklima.de/api/availability
@@ -73,6 +74,7 @@ config:
             - { id: "589", name: "Bauhaus Frankfurt" }
 
     - name: Midea PortaSplit
+      priceMax: 900
       sources:
         braucheklima:
           url: https://braucheklima.de/api/availability

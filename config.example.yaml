@@ -7,7 +7,7 @@ checkInterval: 5m
 httpTimeout: 30s
 dbPath: klima.db # container/prod: /data/product-monitor.db
 metricsAddr: ":8080" # Prometheus /metrics listen address
-priceMax: 0 # ignore offers above this many euros; 0 = no limit
+priceMax: 0 # default cap in euros; 0 = no limit. Override per product below.
 
 # localPLZPrefixes keeps an in-store result only if its PLZ starts with one of
 # these; online is unaffected. OBI is queried per configured postalCode and
@@ -40,6 +40,7 @@ flaresolverr:
 #   klimafy, entratek, bobselektro, grsolar.
 products:
   - name: Midea PortaSplit Cool
+    priceMax: 800            # per-product cap; falls back to top-level priceMax if unset
     sources:
       braucheklima:
         url: https://braucheklima.de/api/availability
@@ -76,6 +77,7 @@ products:
           - { id: "589", name: "Bauhaus Frankfurt" }
 
   - name: Midea PortaSplit
+    priceMax: 900
     sources:
       braucheklima:
         url: https://braucheklima.de/api/availability

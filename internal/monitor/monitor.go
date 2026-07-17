@@ -24,18 +24,16 @@ type Monitor struct {
 	store         *store.Store
 	notifier      notify.Notifier
 	log           *slog.Logger
-	priceMax      int      // 0 = unlimited
 	localPrefixes []string // in-store PLZ prefixes to keep; empty = keep all
 	metrics       Recorder
 }
 
-func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, priceMax int, localPrefixes []string, metrics Recorder) *Monitor {
+func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, localPrefixes []string, metrics Recorder) *Monitor {
 	return &Monitor{
 		sources:       sources,
 		store:         st,
 		notifier:      n,
 		log:           log,
-		priceMax:      priceMax,
 		localPrefixes: localPrefixes,
 		metrics:       metrics,
 	}
@@ -165,13 +163,14 @@ func (m *Monitor) isLocal(a model.Availability) bool {
 	return false
 }
 
-// withinBudget keeps offers with unknown price; priceMax <= 0 disables the filter.
+// withinBudget keeps offers with unknown price; the per-product PriceMax <= 0
+// disables the filter for that product.
 func (m *Monitor) withinBudget(a model.Availability) bool {
-	if m.priceMax <= 0 || a.Price == nil {
+	if a.PriceMax <= 0 || a.Price == nil {
 		return true
 	}
-	if *a.Price > float64(m.priceMax) {
-		m.log.Debug("skipping over budget", "key", a.Key, "price", *a.Price, "max", m.priceMax)
+	if *a.Price > float64(a.PriceMax) {
+		m.log.Debug("skipping over budget", "key", a.Key, "price", *a.Price, "max", a.PriceMax)
 		return false
 	}
 	return true

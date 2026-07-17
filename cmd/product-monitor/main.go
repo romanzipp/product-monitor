@@ -59,8 +59,9 @@ func main() {
 	var sources []model.Source
 	for _, p := range cfg.Products {
 		s := p.Sources
-		// add wraps a source so its availabilities carry this product's name.
-		add := func(src model.Source) { sources = append(sources, source.WithProduct(src, p.Name)) }
+		priceMax := p.EffectivePriceMax(cfg.PriceMax)
+		// add wraps a source so its availabilities carry this product's name and cap.
+		add := func(src model.Source) { sources = append(sources, source.WithProduct(src, p.Name, priceMax)) }
 
 		if s.BraucheKlima != nil {
 			add(source.NewBraucheKlima(httpClient, flareSolverr, s.BraucheKlima.URL, s.BraucheKlima.Products))
@@ -183,7 +184,7 @@ func main() {
 		os.Exit(2)
 	}
 
-	mon := monitor.New(sources, db, notifier, log, cfg.PriceMax, cfg.LocalPLZPrefixes, mx)
+	mon := monitor.New(sources, db, notifier, log, cfg.LocalPLZPrefixes, mx)
 	mon.Run(ctx, cfg.CheckInterval)
 }
 

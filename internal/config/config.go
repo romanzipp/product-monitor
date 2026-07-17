@@ -36,10 +36,21 @@ type Config struct {
 
 // Product is a monitored product plus the per-source config used to find it. The
 // name is shown in notifications. A source is checked only if it is present under
-// `sources`; an absent source is skipped (no enabled flag).
+// `sources`; an absent source is skipped (no enabled flag). PriceMax caps offers
+// for this product; 0 (or unset) falls back to the top-level priceMax.
 type Product struct {
-	Name    string         `yaml:"name"`
-	Sources ProductSources `yaml:"sources"`
+	Name     string         `yaml:"name"`
+	PriceMax int            `yaml:"priceMax"`
+	Sources  ProductSources `yaml:"sources"`
+}
+
+// EffectivePriceMax returns the product's own cap, or the given global fallback
+// when the product does not set one.
+func (p Product) EffectivePriceMax(global int) int {
+	if p.PriceMax > 0 {
+		return p.PriceMax
+	}
+	return global
 }
 
 // BauhausStoreEntry is one physical Bauhaus store: its numeric id and a name.
