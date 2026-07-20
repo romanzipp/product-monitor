@@ -177,6 +177,9 @@ func main() {
 				add(source.NewBauhausStore(httpClient, flareSolverr, s.BauhausStore.ProductIDs, stores))
 			}
 		}
+		if s.ShopifyCollection != nil {
+			add(source.NewShopifyCollection(httpClient, nil, s.ShopifyCollection.URLs, s.ShopifyCollection.StoreName))
+		}
 	}
 
 	if len(sources) == 0 {

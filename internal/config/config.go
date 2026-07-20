@@ -71,7 +71,8 @@ type URLSource struct {
 // bauhaus, hagebau, hornbach, toom, solarprofi, galaxus, solario24, evolarshop,
 // bueromarkt, expert, prosatech, tado, solarhandel24, schwabklima, grz, selfio,
 // klimavertrieb, groupsumi, weinmannschanz, talentking, heizungbilliger, tecedo,
-// mediadeal, klimafy, entratek, bobselektro, grsolar, bauhausStore.
+// mediadeal, klimafy, entratek, bobselektro, grsolar, bauhausStore,
+// shopifyCollection.
 type ProductSources struct {
 	BraucheKlima *struct {
 		URL      string   `yaml:"url"`
@@ -119,6 +120,11 @@ type ProductSources struct {
 		ProductIDs []string            `yaml:"productIDs"`
 		Stores     []BauhausStoreEntry `yaml:"stores"`
 	} `yaml:"bauhausStore"`
+	// ShopifyCollection alerts when ANY product in a Shopify collection is in stock.
+	ShopifyCollection *struct {
+		URLs      []string `yaml:"urls"`
+		StoreName string   `yaml:"storeName"`
+	} `yaml:"shopifyCollection"`
 }
 
 // Duration unmarshals a YAML duration string such as "5m" or "30s".

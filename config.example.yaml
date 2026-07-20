@@ -33,6 +33,7 @@ flaresolverr:
 # Supported sources (config keys):
 #   braucheklima (url + products), obi (productIDs + postalCodes),
 #   expert (urls + storeId), bauhausStore (productIDs + stores),
+#   shopifyCollection (urls + storeName — alerts on any in-stock product in a Shopify collection),
 #   and URL-list sources: mediamarkt, euronics, globus, amazon, bauhaus, hagebau,
 #   hornbach, toom, solarprofi, galaxus, solario24, evolarshop, bueromarkt,
 #   prosatech, tado, solarhandel24, schwabklima, grz, selfio, klimavertrieb,

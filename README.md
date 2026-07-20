@@ -107,6 +107,7 @@ Every source takes a **list**, so one product can be watched at several URLs
 | `bobselektro` | bobselektro.de, delivery-badge check | `urls` | online |
 | `grsolar` | gr-solar.de product pages | `urls` | online |
 | `bauhausStore` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `stores` | in-store |
+| `shopifyCollection` | any Shopify collection, alerts on any in-stock product | `urls` + `storeName` | online |
 
 Most product-page sources read the `schema.org` JSON-LD availability. A few need
 custom handling: Amazon uses its buybox add-to-cart button, `expert` calls a
