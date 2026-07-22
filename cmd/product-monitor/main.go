@@ -178,7 +178,8 @@ func main() {
 			}
 		}
 		if s.ShopifyCollection != nil {
-			add(source.NewShopifyCollection(httpClient, nil, s.ShopifyCollection.URLs, s.ShopifyCollection.StoreName))
+			// Some Shopify stores 429 datacenter IPs on products.json: route through FlareSolverr.
+			add(source.NewShopifyCollection(httpClient, flareSolverr, s.ShopifyCollection.URLs, s.ShopifyCollection.StoreName))
 		}
 	}
 
