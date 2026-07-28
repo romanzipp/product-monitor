@@ -24,6 +24,7 @@ steps:
     image: woodpeckerci/plugin-docker-buildx:6.1.0
     <<: *step_resources
     settings:
+      mtu: 1400
       registry: *registry
       repo: *image_repo
       tags:
