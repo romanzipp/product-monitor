@@ -108,6 +108,7 @@ Every source takes a **list**, so one product can be watched at several URLs
 | `grsolar` | gr-solar.de product pages | `urls` | online |
 | `bauhausStore` | Bauhaus `/api/purchasability`, per product×store | `productIDs` + `stores` | in-store |
 | `shopifyCollection` | any Shopify collection, alerts on any in-stock product | `urls` + `storeName` | online |
+| `krasserstoff` | Krasser Stoff ticket shops (krasserstoff.com, shop.casperxo.com), regular and re:sale tickets | `shop` + `urls` | online |
 
 Most product-page sources read the `schema.org` JSON-LD availability. A few need
 custom handling: Amazon uses its buybox add-to-cart button, `expert` calls a

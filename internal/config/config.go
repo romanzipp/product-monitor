@@ -72,7 +72,7 @@ type URLSource struct {
 // bueromarkt, expert, prosatech, tado, solarhandel24, schwabklima, grz, selfio,
 // klimavertrieb, groupsumi, weinmannschanz, talentking, heizungbilliger, tecedo,
 // mediadeal, klimafy, entratek, bobselektro, grsolar, bauhausStore,
-// shopifyCollection.
+// shopifyCollection, krasserstoff.
 type ProductSources struct {
 	BraucheKlima *struct {
 		URL      string   `yaml:"url"`
@@ -125,6 +125,11 @@ type ProductSources struct {
 		URLs      []string `yaml:"urls"`
 		StoreName string   `yaml:"storeName"`
 	} `yaml:"shopifyCollection"`
+	// KrasserStoff alerts on regular and re:sale tickets for Krasser Stoff shop events.
+	KrasserStoff *struct {
+		Shop string   `yaml:"shop"`
+		URLs []string `yaml:"urls"`
+	} `yaml:"krasserstoff"`
 }
 
 // Duration unmarshals a YAML duration string such as "5m" or "30s".

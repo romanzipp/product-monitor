@@ -181,6 +181,9 @@ func main() {
 			// Some Shopify stores 429 datacenter IPs on products.json: route through FlareSolverr.
 			add(source.NewShopifyCollection(httpClient, flareSolverr, s.ShopifyCollection.URLs, s.ShopifyCollection.StoreName))
 		}
+		if s.KrasserStoff != nil {
+			add(source.NewKrasserStoff(httpClient, s.KrasserStoff.Shop, s.KrasserStoff.URLs))
+		}
 	}
 
 	if len(sources) == 0 {
