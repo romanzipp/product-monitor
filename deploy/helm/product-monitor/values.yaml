@@ -1,5 +1,5 @@
 image:
-  repository: registry.apex.romanzipp.cloud/product-monitor-image
+  repository: product-monitor-image
   pullPolicy: IfNotPresent
   # Defaults to .Chart.AppVersion (== the git tag the chart was packaged from).
   tag: ""
