@@ -5,6 +5,7 @@ import (
 	"context"
 	"log/slog"
 	"strings"
+	"sync"
 	"time"
 
 	"product-monitor/internal/model"
@@ -18,9 +19,16 @@ type Recorder interface {
 	ObserveNotification(source string)
 }
 
-// Monitor periodically polls all sources and notifies on new availability.
+// Product is one monitored product: its sources and how often to poll them.
+type Product struct {
+	Name     string
+	Interval time.Duration
+	Sources  []model.Source
+}
+
+// Monitor polls every product on its own interval and notifies on new availability.
 type Monitor struct {
-	sources       []model.Source
+	products      []Product
 	store         *store.Store
 	notifier      notify.Notifier
 	log           *slog.Logger
@@ -28,9 +36,9 @@ type Monitor struct {
 	metrics       Recorder
 }
 
-func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.Logger, localPrefixes []string, metrics Recorder) *Monitor {
+func New(products []Product, st *store.Store, n notify.Notifier, log *slog.Logger, localPrefixes []string, metrics Recorder) *Monitor {
 	return &Monitor{
-		sources:       sources,
+		products:      products,
 		store:         st,
 		notifier:      n,
 		log:           log,
@@ -39,38 +47,51 @@ func New(sources []model.Source, st *store.Store, n notify.Notifier, log *slog.L
 	}
 }
 
-// Run polls every interval until ctx is cancelled, starting immediately.
-func (m *Monitor) Run(ctx context.Context, interval time.Duration) {
-	m.log.Info("monitor started", "interval", interval, "sources", sourceNames(m.sources))
+// Run starts one watcher goroutine per product and blocks until ctx is cancelled.
+func (m *Monitor) Run(ctx context.Context) {
+	var wg sync.WaitGroup
+	for _, p := range m.products {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			m.watch(ctx, p)
+		}()
+	}
+	wg.Wait()
+	m.log.Info("monitor stopped")
+}
 
-	m.tick(ctx)
+// watch polls one product every interval until ctx is cancelled, starting immediately.
+func (m *Monitor) watch(ctx context.Context, p Product) {
+	m.log.Info("product watcher started", "product", p.Name, "interval", p.Interval, "sources", sourceNames(p.Sources))
 
-	t := time.NewTicker(interval)
+	m.tick(ctx, p)
+
+	t := time.NewTicker(p.Interval)
 	defer t.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			m.log.Info("monitor stopping")
 			return
 		case <-t.C:
-			m.tick(ctx)
+			m.tick(ctx, p)
 		}
 	}
 }
 
-// tick polls all sources, reconciles the store and notifies on new items.
-func (m *Monitor) tick(ctx context.Context) {
+// tick polls one product's sources, reconciles its store rows and notifies on new items.
+func (m *Monitor) tick(ctx context.Context, p Product) {
 	current := make([]model.Availability, 0, 16)
-	for _, src := range m.sources {
+	for _, src := range p.Sources {
 		avail, err := src.Check(ctx)
 		if err != nil {
-			m.log.Error("source check failed", "source", src.Name(), "err", err)
+			m.log.Error("source check failed", "product", p.Name, "source", src.Name(), "err", err)
 			m.observeCheck(src.Name(), false, 0, 0, nil)
 			continue
 		}
 		stock, minPrice := availStats(avail)
 		m.observeCheck(src.Name(), true, len(avail), stock, minPrice)
-		attrs := []any{"source", src.Name(), "available", len(avail), "stock", stock}
+		attrs := []any{"product", p.Name, "source", src.Name(), "available", len(avail), "stock", stock}
 		if minPrice != nil {
 			attrs = append(attrs, "min_price", *minPrice)
 		}
@@ -92,8 +113,8 @@ func (m *Monitor) tick(ctx context.Context) {
 	}
 
 	// Drop records no longer available so a future restock re-notifies.
-	if existing, err := m.store.AllKeys(ctx); err != nil {
-		m.log.Error("loading tracked keys failed", "err", err)
+	if existing, err := m.store.ProductKeys(ctx, p.Name); err != nil {
+		m.log.Error("loading tracked keys failed", "product", p.Name, "err", err)
 	} else {
 		for _, k := range existing {
 			if _, ok := currentKeys[k]; !ok {
@@ -107,7 +128,7 @@ func (m *Monitor) tick(ctx context.Context) {
 	}
 
 	if len(current) == 0 {
-		m.log.Info("no availability found this cycle")
+		m.log.Info("no availability found this cycle", "product", p.Name)
 		return
 	}
 

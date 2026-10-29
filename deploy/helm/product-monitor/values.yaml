@@ -19,7 +19,6 @@ imagePullSecrets: []
 # PUSHOVER_USER) come from envFromSecret. See config.example.yaml for the schema.
 # flaresolverr.url points at the in-cluster FlareSolverr Service below.
 config:
-  checkInterval: 5m
   httpTimeout: 30s
   dbPath: /data/product-monitor.db
   metricsAddr: ":8080"
@@ -37,6 +36,7 @@ config:
   # source is checked only if listed. See config.example.yaml for all keys.
   products:
     - name: Midea PortaSplit Cool
+      checkInterval: 5m
       priceMax: 800            # per-product cap; falls back to top-level priceMax if unset
       sources:
         braucheklima:
@@ -74,6 +74,7 @@ config:
             - { id: "589", name: "Bauhaus Frankfurt" }
 
     - name: Midea PortaSplit
+      checkInterval: 5m
       priceMax: 900
       sources:
         braucheklima:

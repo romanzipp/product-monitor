@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"product-monitor/internal/config"
 	"product-monitor/internal/metrics"
@@ -56,8 +57,9 @@ func main() {
 		log.Info("flaresolverr enabled", "url", cfg.FlareSolverrURL)
 	}
 
-	var sources []model.Source
+	var products []monitor.Product
 	for _, p := range cfg.Products {
+		var sources []model.Source
 		s := p.Sources
 		priceMax := p.EffectivePriceMax(cfg.PriceMax)
 		// add wraps a source so its availabilities carry this product's name and cap.
@@ -184,15 +186,21 @@ func main() {
 		if s.KrasserStoff != nil {
 			add(source.NewKrasserStoff(httpClient, s.KrasserStoff.Shop, s.KrasserStoff.URLs))
 		}
+
+		if len(sources) == 0 {
+			log.Warn("product has no sources, skipping", "product", p.Name)
+			continue
+		}
+		products = append(products, monitor.Product{Name: p.Name, Interval: time.Duration(p.CheckInterval), Sources: sources})
 	}
 
-	if len(sources) == 0 {
+	if len(products) == 0 {
 		log.Error("no sources configured, exiting")
 		os.Exit(2)
 	}
 
-	mon := monitor.New(sources, db, notifier, log, cfg.LocalPLZPrefixes, mx)
-	mon.Run(ctx, cfg.CheckInterval)
+	mon := monitor.New(products, db, notifier, log, cfg.LocalPLZPrefixes, mx)
+	mon.Run(ctx)
 }
 
 // serveMetrics runs the Prometheus metrics HTTP server until the process exits.

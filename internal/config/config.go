@@ -13,11 +13,10 @@ import (
 
 // Config holds all runtime configuration for the app.
 type Config struct {
-	CheckInterval time.Duration
-	HTTPTimeout   time.Duration
-	DBPath        string
-	MetricsAddr   string
-	PriceMax      int
+	HTTPTimeout time.Duration
+	DBPath      string
+	MetricsAddr string
+	PriceMax    int
 
 	PushoverToken    string // from env PUSHOVER_TOKEN
 	PushoverUser     string // from env PUSHOVER_USER
@@ -38,10 +37,12 @@ type Config struct {
 // name is shown in notifications. A source is checked only if it is present under
 // `sources`; an absent source is skipped (no enabled flag). PriceMax caps offers
 // for this product; 0 (or unset) falls back to the top-level priceMax.
+// CheckInterval is how often this product's sources are polled.
 type Product struct {
-	Name     string         `yaml:"name"`
-	PriceMax int            `yaml:"priceMax"`
-	Sources  ProductSources `yaml:"sources"`
+	Name          string         `yaml:"name"`
+	CheckInterval Duration       `yaml:"checkInterval"`
+	PriceMax      int            `yaml:"priceMax"`
+	Sources       ProductSources `yaml:"sources"`
 }
 
 // EffectivePriceMax returns the product's own cap, or the given global fallback
@@ -150,7 +151,6 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 
 // fileConfig mirrors the YAML file.
 type fileConfig struct {
-	CheckInterval    Duration `yaml:"checkInterval"`
 	HTTPTimeout      Duration `yaml:"httpTimeout"`
 	DBPath           string   `yaml:"dbPath"`
 	MetricsAddr      string   `yaml:"metricsAddr"`
@@ -187,11 +187,10 @@ func Load(path string) (*Config, error) {
 	}
 
 	cfg := &Config{
-		CheckInterval: time.Duration(fc.CheckInterval),
-		HTTPTimeout:   time.Duration(fc.HTTPTimeout),
-		DBPath:        fc.DBPath,
-		MetricsAddr:   fc.MetricsAddr,
-		PriceMax:      fc.PriceMax,
+		HTTPTimeout: time.Duration(fc.HTTPTimeout),
+		DBPath:      fc.DBPath,
+		MetricsAddr: fc.MetricsAddr,
+		PriceMax:    fc.PriceMax,
 
 		PushoverToken:    os.Getenv("PUSHOVER_TOKEN"),
 		PushoverUser:     os.Getenv("PUSHOVER_USER"),
@@ -220,8 +219,10 @@ func (c *Config) validate() error {
 	if len(c.Products) == 0 {
 		return fmt.Errorf("at least one product must be configured")
 	}
-	if c.CheckInterval <= 0 {
-		return fmt.Errorf("checkInterval must be a positive duration")
+	for _, p := range c.Products {
+		if p.CheckInterval <= 0 {
+			return fmt.Errorf("product %q: checkInterval must be a positive duration", p.Name)
+		}
 	}
 	return nil
 }

@@ -22,7 +22,6 @@ func TestLoadReadsValuesVerbatim(t *testing.T) {
 
 	// Values are read exactly as written; there are no built-in defaults.
 	p := writeConfig(t, `
-checkInterval: 10m
 httpTimeout: 15s
 priceMax: 900
 localPLZPrefixes: ["60", "63"]
@@ -30,6 +29,7 @@ pushover:
   priority: 2
 products:
   - name: Halterung
+    checkInterval: 10m
     sources:
       obi:
         productIDs: ["123"]
@@ -44,9 +44,6 @@ products:
 		t.Fatalf("Load: %v", err)
 	}
 
-	if cfg.CheckInterval != 10*time.Minute {
-		t.Errorf("CheckInterval = %v, want 10m", cfg.CheckInterval)
-	}
 	if cfg.HTTPTimeout != 15*time.Second {
 		t.Errorf("HTTPTimeout = %v, want 15s", cfg.HTTPTimeout)
 	}
@@ -58,6 +55,9 @@ products:
 	}
 	if len(cfg.Products) != 1 || cfg.Products[0].Name != "Halterung" {
 		t.Fatalf("Products = %+v, want one named Halterung", cfg.Products)
+	}
+	if time.Duration(cfg.Products[0].CheckInterval) != 10*time.Minute {
+		t.Errorf("CheckInterval = %v, want 10m", cfg.Products[0].CheckInterval)
 	}
 	s := cfg.Products[0].Sources
 	if s.Obi == nil || len(s.Obi.ProductIDs) != 1 || s.Obi.PostalCodes[0] != "60311" {
@@ -78,7 +78,7 @@ products:
 func TestLoadMissingSecrets(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "")
 	t.Setenv("PUSHOVER_USER", "")
-	p := writeConfig(t, "checkInterval: 5m\nproducts:\n  - name: X\n    sources:\n      obi:\n        productIDs: [\"1\"]\n")
+	p := writeConfig(t, "products:\n  - name: X\n    checkInterval: 5m\n    sources:\n      obi:\n        productIDs: [\"1\"]\n")
 	if _, err := Load(p); err == nil {
 		t.Fatal("expected error for missing Pushover secrets")
 	}
@@ -87,8 +87,8 @@ func TestLoadMissingSecrets(t *testing.T) {
 func TestLoadMissingCheckInterval(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "tok")
 	t.Setenv("PUSHOVER_USER", "usr")
-	// No checkInterval -> zero -> validation error (no default fills it in).
-	p := writeConfig(t, "products:\n  - name: X\n    sources:\n      obi:\n        productIDs: [\"1\"]\n")
+	// Top-level checkInterval is no longer read; each product needs its own.
+	p := writeConfig(t, "checkInterval: 5m\nproducts:\n  - name: X\n    sources:\n      obi:\n        productIDs: [\"1\"]\n")
 	if _, err := Load(p); err == nil {
 		t.Fatal("expected error for missing checkInterval")
 	}
@@ -97,7 +97,7 @@ func TestLoadMissingCheckInterval(t *testing.T) {
 func TestLoadNoProducts(t *testing.T) {
 	t.Setenv("PUSHOVER_TOKEN", "tok")
 	t.Setenv("PUSHOVER_USER", "usr")
-	p := writeConfig(t, "checkInterval: 5m\n")
+	p := writeConfig(t, "httpTimeout: 5s\n")
 	if _, err := Load(p); err == nil {
 		t.Fatal("expected error for no products")
 	}

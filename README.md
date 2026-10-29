@@ -12,7 +12,8 @@ notification. Offers above `priceMax` are ignored.
 
 ## How it works
 
-1. Every `checkInterval`, each configured **source** is polled.
+1. Each product runs on its own timer: every `checkInterval` (set per product),
+   its configured **sources** are polled.
 2. Each source returns the set of currently in-stock offerings.
 3. For any offering not yet recorded, a Pushover message is sent and the result
    is stored in SQLite (dedup key = source + store + product).

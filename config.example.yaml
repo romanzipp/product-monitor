@@ -3,7 +3,6 @@
 # Secrets are NOT set here — PUSHOVER_TOKEN and PUSHOVER_USER come from the
 # environment (or a .env file). There are no built-in defaults.
 
-checkInterval: 5m
 httpTimeout: 30s
 dbPath: klima.db # container/prod: /data/product-monitor.db
 metricsAddr: ":8080" # Prometheus /metrics listen address
@@ -26,7 +25,8 @@ flaresolverr:
   url: ""
   timeout: 60s
 
-# Each product has a `name` (used in the notification title) and a `sources` map.
+# Each product has a `name` (used in the notification title), a `checkInterval`
+# (its own poll timer) and a `sources` map.
 # A source is checked only if it is listed; omit a source to skip it. Every source
 # takes a list, so it can watch several product pages at once.
 #
@@ -42,6 +42,7 @@ flaresolverr:
 #   klimafy, entratek, bobselektro, grsolar.
 products:
   - name: Midea PortaSplit Cool
+    checkInterval: 5m
     priceMax: 800            # per-product cap; falls back to top-level priceMax if unset
     sources:
       braucheklima:
@@ -79,6 +80,7 @@ products:
           - { id: "589", name: "Bauhaus Frankfurt" }
 
   - name: Midea PortaSplit
+    checkInterval: 5m
     priceMax: 900
     sources:
       braucheklima:
@@ -162,6 +164,7 @@ products:
           - { id: "589", name: "Bauhaus Frankfurt" }
 
   - name: Casper Zurück Zuhause
+    checkInterval: 5m
     sources:
       # shop = slug in the API path: "casperxo" for shop.casperxo.com, "krasserstoff" for krasserstoff.com.
       krasserstoff:

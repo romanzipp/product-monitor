@@ -120,10 +120,10 @@ UPDATE notifications
 	return nil
 }
 
-func (s *Store) AllKeys(ctx context.Context) ([]string, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT key FROM notifications`)
+func (s *Store) ProductKeys(ctx context.Context, product string) ([]string, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT key FROM notifications WHERE product = ?`, product)
 	if err != nil {
-		return nil, fmt.Errorf("all keys: %w", err)
+		return nil, fmt.Errorf("product keys: %w", err)
 	}
 	defer rows.Close()
 	var keys []string
