@@ -24,6 +24,14 @@ RUN mkdir -p /data
 
 # -----------------------------------------------------------
 FROM gcr.io/distroless/static-debian12:nonroot
+LABEL org.opencontainers.image.title="product-monitor" \
+  org.opencontainers.image.description="Product stock monitor with Pushover notifications" \
+  org.opencontainers.image.vendor="Roman Zipp" \
+  org.opencontainers.image.authors="Roman Zipp" \
+  org.opencontainers.image.licenses="NOASSERTION" \
+  org.opencontainers.image.url="https://codeberg.org/romanzipp/product-monitor" \
+  org.opencontainers.image.source="https://codeberg.org/romanzipp/product-monitor" \
+  org.opencontainers.image.documentation="https://codeberg.org/romanzipp/product-monitor"
 ARG VERSION=dev
 LABEL org.opencontainers.image.version=$VERSION
 

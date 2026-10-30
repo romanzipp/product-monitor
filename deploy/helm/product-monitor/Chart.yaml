@@ -5,3 +5,12 @@ type: application
 # version and appVersion are overwritten at package time by the release workflow.
 version: 0.0.0
 appVersion: "0.0.0"
+home: https://codeberg.org/romanzipp/product-monitor
+sources:
+  - https://codeberg.org/romanzipp/product-monitor
+maintainers:
+  - name: Roman Zipp
+annotations:
+  org.opencontainers.image.vendor: Roman Zipp
+  org.opencontainers.image.licenses: NOASSERTION
+  org.opencontainers.image.documentation: https://codeberg.org/romanzipp/product-monitor
