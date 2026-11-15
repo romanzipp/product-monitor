@@ -4,7 +4,7 @@ go 1.27
 
 require (
 	github.com/bogdanfinn/fhttp v0.7.3
-	github.com/bogdanfinn/tls-client v1.18.0
+	github.com/bogdanfinn/tls-client v1.18.1
 	github.com/joho/godotenv v1.5.1
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.62.0
